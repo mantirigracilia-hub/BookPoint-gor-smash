@@ -1,0 +1,54 @@
+{
+    "type": "dfd_level_0",
+    "name": "BookPoint - Context Diagram",
+    "process": {
+        "id": "P0",
+        "name": "Sistem BookPoint"
+    },
+    "external_entities": [
+        {
+            "id": "E1",
+            "name": "Pelanggan"
+        },
+        {
+            "id": "E2",
+            "name": "Admin"
+        },
+        {
+            "id": "E3",
+            "name": "Pemilik"
+        }
+    ],
+    "data_flows": [
+        {
+            "source": "E1",
+            "target": "P0",
+            "description": "Data Akun, Data Booking, Bukti Transfer DP, Permintaan Batal/Ubah"
+        },
+        {
+            "source": "P0",
+            "target": "E1",
+            "description": "Info Jadwal Kosong, Nota/Rincian Biaya, Status Booking"
+        },
+        {
+            "source": "E2",
+            "target": "P0",
+            "description": "Data Booking Baru, Verifikasi DP, Data Pelunasan, Data Member Baru, Alasan Batal (Gangguan)"
+        },
+        {
+            "source": "P0",
+            "target": "E2",
+            "description": "Jadwal & Status, Detail Booking"
+        },
+        {
+            "source": "E3",
+            "target": "P0",
+            "description": "Data Lapangan, Tarif, Akun Admin"
+        },
+        {
+            "source": "P0",
+            "target": "E3",
+            "description": "Laporan Pendapatan, Laporan Okupansi"
+        }
+    ]
+}

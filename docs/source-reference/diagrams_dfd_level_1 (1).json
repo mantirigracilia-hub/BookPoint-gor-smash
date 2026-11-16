@@ -1,0 +1,155 @@
+{
+    "type": "dfd_level_1",
+    "name": "BookPoint - DFD Level 1",
+    "external_entities": [
+        {
+            "id": "E1",
+            "name": "Pelanggan"
+        },
+        {
+            "id": "E2",
+            "name": "Admin"
+        },
+        {
+            "id": "E3",
+            "name": "Pemilik"
+        }
+    ],
+    "processes": [
+        {
+            "id": "P1",
+            "name": "Manajemen Akun & Hak Akses"
+        },
+        {
+            "id": "P2",
+            "name": "Manajemen Jadwal & Booking"
+        },
+        {
+            "id": "P3",
+            "name": "Manajemen Pembayaran & DP"
+        },
+        {
+            "id": "P4",
+            "name": "Manajemen Pelaporan"
+        },
+        {
+            "id": "P5",
+            "name": "Manajemen Master Data"
+        }
+    ],
+    "data_stores": [
+        {
+            "id": "D1",
+            "name": "Akun & Member"
+        },
+        {
+            "id": "D2",
+            "name": "Data Booking"
+        },
+        {
+            "id": "D3",
+            "name": "Data Pembayaran"
+        },
+        {
+            "id": "D4",
+            "name": "Data Master (Tarif/Lapangan)"
+        }
+    ],
+    "data_flows": [
+        {
+            "source": "E1",
+            "target": "P1",
+            "description": "Data Akun"
+        },
+        {
+            "source": "E1",
+            "target": "P2",
+            "description": "Req Booking/Batal"
+        },
+        {
+            "source": "P2",
+            "target": "E1",
+            "description": "Jadwal, Status, Nota"
+        },
+        {
+            "source": "E1",
+            "target": "P3",
+            "description": "Bukti Transfer"
+        },
+        {
+            "source": "E2",
+            "target": "P1",
+            "description": "Data Member"
+        },
+        {
+            "source": "E2",
+            "target": "P2",
+            "description": "Req Booking (via WA/Telp)"
+        },
+        {
+            "source": "E2",
+            "target": "P3",
+            "description": "Verifikasi DP, Input Lunas"
+        },
+        {
+            "source": "P3",
+            "target": "E2",
+            "description": "Status DP"
+        },
+        {
+            "source": "E3",
+            "target": "P5",
+            "description": "Data Master"
+        },
+        {
+            "source": "P4",
+            "target": "E3",
+            "description": "Laporan (Pendapatan/Okupansi)"
+        },
+        {
+            "source": "P1",
+            "target": "D1",
+            "description": "Data Akun/Member"
+        },
+        {
+            "source": "P2",
+            "target": "D2",
+            "description": "Simpan/Update Booking"
+        },
+        {
+            "source": "D2",
+            "target": "P2",
+            "description": "Baca Jadwal Kosong"
+        },
+        {
+            "source": "P3",
+            "target": "D3",
+            "description": "Simpan Pembayaran"
+        },
+        {
+            "source": "P3",
+            "target": "D2",
+            "description": "Update Status (Lunas/Batal)"
+        },
+        {
+            "source": "P5",
+            "target": "D4",
+            "description": "Simpan Master"
+        },
+        {
+            "source": "D4",
+            "target": "P2",
+            "description": "Baca Tarif"
+        },
+        {
+            "source": "D2",
+            "target": "P4",
+            "description": "Baca Data Booking"
+        },
+        {
+            "source": "D3",
+            "target": "P4",
+            "description": "Baca Data Pembayaran"
+        }
+    ]
+}
