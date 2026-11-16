@@ -76,9 +76,20 @@ CREATE TABLE IF NOT EXISTS detail_booking (
  FOREIGN KEY (id_lapangan) REFERENCES lapangan(id_lapangan),
  INDEX idx_slot(tanggal,id_lapangan,jam_mulai,jam_selesai)
 );
+CREATE TABLE IF NOT EXISTS reservasi_slot (
+ id_lapangan BIGINT NOT NULL,
+ tanggal DATE NOT NULL,
+ jam_mulai TIME NOT NULL,
+ id_booking BIGINT NOT NULL,
+ PRIMARY KEY(id_lapangan,tanggal,jam_mulai),
+ INDEX idx_reservasi_booking(id_booking),
+ FOREIGN KEY (id_lapangan) REFERENCES lapangan(id_lapangan),
+ FOREIGN KEY (id_booking) REFERENCES booking(id_booking)
+);
 CREATE TABLE IF NOT EXISTS pembayaran (
  id_pembayaran BIGINT AUTO_INCREMENT PRIMARY KEY,
- id_booking BIGINT NOT NULL,
+ id_booking BIGINT NULL,
+ id_keanggotaan BIGINT NULL,
  jenis ENUM('dp','pelunasan','membership') NOT NULL,
  metode ENUM('transfer','tunai') NOT NULL,
  nominal DECIMAL(12,2) NOT NULL,
@@ -88,7 +99,12 @@ CREATE TABLE IF NOT EXISTS pembayaran (
  waktu_bayar DATETIME NULL,
  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
  FOREIGN KEY (id_booking) REFERENCES booking(id_booking),
- FOREIGN KEY (diverifikasi_oleh) REFERENCES akun_pengguna(id_akun)
+ FOREIGN KEY (id_keanggotaan) REFERENCES keanggotaan(id_keanggotaan),
+ FOREIGN KEY (diverifikasi_oleh) REFERENCES akun_pengguna(id_akun),
+ CONSTRAINT chk_pembayaran_parent CHECK (
+  (jenis='membership' AND id_booking IS NULL AND id_keanggotaan IS NOT NULL) OR
+  (jenis IN ('dp','pelunasan') AND id_booking IS NOT NULL AND id_keanggotaan IS NULL)
+ )
 );
 CREATE TABLE IF NOT EXISTS pembatalan_booking (
  id_pembatalan BIGINT AUTO_INCREMENT PRIMARY KEY,
@@ -96,9 +112,21 @@ CREATE TABLE IF NOT EXISTS pembatalan_booking (
  alasan TEXT NOT NULL,
  pembatal_oleh BIGINT NOT NULL,
  dp_hangus BOOLEAN DEFAULT FALSE,
+ status_permohonan ENUM('menunggu_admin','disetujui','ditolak') NOT NULL DEFAULT 'disetujui',
+ status_pengembalian ENUM('tidak_ada','menunggu','selesai') NOT NULL DEFAULT 'tidak_ada',
  created_at TIMESTAMP DEFAULT CURRENT_TIMESTAMP,
  FOREIGN KEY (id_booking) REFERENCES booking(id_booking),
  FOREIGN KEY (pembatal_oleh) REFERENCES akun_pengguna(id_akun)
+);
+CREATE TABLE IF NOT EXISTS pengembalian_dana (
+ id_pengembalian BIGINT AUTO_INCREMENT PRIMARY KEY,
+ id_pembatalan BIGINT NOT NULL UNIQUE,
+ nominal DECIMAL(12,2) NOT NULL,
+ metode ENUM('transfer','tunai') NOT NULL,
+ diproses_oleh BIGINT NOT NULL,
+ waktu_pengembalian DATETIME NOT NULL,
+ FOREIGN KEY (id_pembatalan) REFERENCES pembatalan_booking(id_pembatalan),
+ FOREIGN KEY (diproses_oleh) REFERENCES akun_pengguna(id_akun)
 );
 CREATE TABLE IF NOT EXISTS reschedule_booking (
  id_reschedule BIGINT AUTO_INCREMENT PRIMARY KEY,

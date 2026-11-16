@@ -1,0 +1,282 @@
+{
+  "name": "diagrams_use_case",
+  "diagrams": [
+    {
+      "id": "lz9g33pb",
+      "type": "usecase",
+      "title": "Use Case Diagram",
+      "nodes": [
+        {
+          "id": "6wbzx0fq",
+          "kind": "system",
+          "x": -28,
+          "y": 33,
+          "w": 719,
+          "h": 729,
+          "label": "Sistem BookPoint"
+        },
+        {
+          "id": "72ub2hxk",
+          "kind": "actor",
+          "x": -271,
+          "y": 82,
+          "w": 67,
+          "h": 92,
+          "label": "Pelangan"
+        },
+        {
+          "id": "rwju63z3",
+          "kind": "actor",
+          "x": 212,
+          "y": -294,
+          "w": 129,
+          "h": 92,
+          "label": "Pemilik (Ko Hendra)"
+        },
+        {
+          "id": "dl3acwu5",
+          "kind": "actor",
+          "x": 830,
+          "y": 81,
+          "w": 123,
+          "h": 92,
+          "label": "Admin (Rio/Nanda)"
+        },
+        {
+          "id": "entavxb1",
+          "kind": "usecase",
+          "x": 6,
+          "y": 90,
+          "w": 174,
+          "h": 50,
+          "label": "Lihat Laporan"
+        },
+        {
+          "id": "2t52ls9i",
+          "kind": "usecase",
+          "x": 244,
+          "y": 109,
+          "w": 174,
+          "h": 50,
+          "label": "Login/Register"
+        },
+        {
+          "id": "zv6uipdh",
+          "kind": "usecase",
+          "x": 473,
+          "y": 109,
+          "w": 174,
+          "h": 50,
+          "label": "Kelola Data Master"
+        },
+        {
+          "id": "3p21m4eo",
+          "kind": "usecase",
+          "x": 243,
+          "y": 229,
+          "w": 174,
+          "h": 50,
+          "label": "Lihat Jadwal"
+        },
+        {
+          "id": "uq6ldrt1",
+          "kind": "usecase",
+          "x": 5,
+          "y": 224,
+          "w": 174,
+          "h": 50,
+          "label": "Booking Mandiri"
+        },
+        {
+          "id": "w54bklkg",
+          "kind": "usecase",
+          "x": 6,
+          "y": 355,
+          "w": 174,
+          "h": 50,
+          "label": "Unggah Bukti DP"
+        },
+        {
+          "id": "ksllmlz3",
+          "kind": "usecase",
+          "x": 2,
+          "y": 484,
+          "w": 174,
+          "h": 50,
+          "label": "Batal/Reschedule"
+        },
+        {
+          "id": "khzicchr",
+          "kind": "usecase",
+          "x": 1,
+          "y": 615,
+          "w": 174,
+          "h": 50,
+          "label": "Lihat Riwayat Booking"
+        },
+        {
+          "id": "z4lw1b24",
+          "kind": "usecase",
+          "x": 478,
+          "y": 207,
+          "w": 174,
+          "h": 50,
+          "label": "Booking via Admin"
+        },
+        {
+          "id": "8a9vs1lo",
+          "kind": "usecase",
+          "x": 470,
+          "y": 313,
+          "w": 174,
+          "h": 50,
+          "label": "Verifikasi DP"
+        },
+        {
+          "id": "n16b4888",
+          "kind": "usecase",
+          "x": 470,
+          "y": 419,
+          "w": 174,
+          "h": 50,
+          "label": "Catat Pelunasan"
+        },
+        {
+          "id": "9xqyhc3m",
+          "kind": "usecase",
+          "x": 476,
+          "y": 530,
+          "w": 174,
+          "h": 50,
+          "label": "Kelola Member"
+        },
+        {
+          "id": "p1fuj9f0",
+          "kind": "usecase",
+          "x": 485,
+          "y": 644,
+          "w": 174,
+          "h": 60,
+          "label": "Batalkan Booking (GOR)"
+        }
+      ],
+      "edges": [
+        {
+          "id": "67vvvruq",
+          "kind": "association",
+          "from": "72ub2hxk",
+          "to": "2t52ls9i",
+          "label": ""
+        },
+        {
+          "id": "3t6w51n2",
+          "kind": "association",
+          "from": "72ub2hxk",
+          "to": "3p21m4eo",
+          "label": ""
+        },
+        {
+          "id": "jp68v2ds",
+          "kind": "association",
+          "from": "72ub2hxk",
+          "to": "uq6ldrt1",
+          "label": ""
+        },
+        {
+          "id": "9orwndwc",
+          "kind": "association",
+          "from": "72ub2hxk",
+          "to": "w54bklkg",
+          "label": ""
+        },
+        {
+          "id": "xvfrh5o0",
+          "kind": "association",
+          "from": "72ub2hxk",
+          "to": "ksllmlz3",
+          "label": ""
+        },
+        {
+          "id": "mle3l6cb",
+          "kind": "association",
+          "from": "72ub2hxk",
+          "to": "khzicchr",
+          "label": ""
+        },
+        {
+          "id": "hso1w5sc",
+          "kind": "association",
+          "from": "dl3acwu5",
+          "to": "2t52ls9i",
+          "label": ""
+        },
+        {
+          "id": "qamgychg",
+          "kind": "association",
+          "from": "dl3acwu5",
+          "to": "3p21m4eo",
+          "label": ""
+        },
+        {
+          "id": "5gz38z0k",
+          "kind": "association",
+          "from": "dl3acwu5",
+          "to": "z4lw1b24",
+          "label": ""
+        },
+        {
+          "id": "otuwvtxr",
+          "kind": "association",
+          "from": "dl3acwu5",
+          "to": "8a9vs1lo",
+          "label": ""
+        },
+        {
+          "id": "5qglcd1c",
+          "kind": "association",
+          "from": "dl3acwu5",
+          "to": "n16b4888",
+          "label": ""
+        },
+        {
+          "id": "xz4ziocz",
+          "kind": "association",
+          "from": "dl3acwu5",
+          "to": "9xqyhc3m",
+          "label": ""
+        },
+        {
+          "id": "1ymhk87r",
+          "kind": "association",
+          "from": "dl3acwu5",
+          "to": "p1fuj9f0",
+          "label": ""
+        },
+        {
+          "id": "qx79979s",
+          "kind": "association",
+          "from": "rwju63z3",
+          "to": "2t52ls9i",
+          "label": ""
+        },
+        {
+          "id": "k3j9r4gc",
+          "kind": "association",
+          "from": "rwju63z3",
+          "to": "entavxb1",
+          "label": ""
+        },
+        {
+          "id": "yndc9gk0",
+          "kind": "association",
+          "from": "rwju63z3",
+          "to": "zv6uipdh",
+          "label": ""
+        }
+      ],
+      "data": {},
+      "settings": {}
+    }
+  ],
+  "activeId": "lz9g33pb"
+}
