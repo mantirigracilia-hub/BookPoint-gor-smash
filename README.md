@@ -21,6 +21,51 @@ Sistem reservasi lapangan badminton berbasis SRS v2.0.
 Frontend: http://localhost:5173  
 Backend health check: http://localhost:5000/api/health
 
+## Konfigurasi deployment internet
+
+Frontend dan backend harus sama-sama dapat diakses dari internet. Untuk frontend
+dan backend pada host/domain berbeda, atur variabel build frontend
+`VITE_API_URL` ke URL publik backend dengan akhiran `/api`, misalnya
+`https://api.domain-anda.com/api`. Vite menyematkan variabel ini saat build,
+jadi build dan deploy ulang frontend setelah mengubah nilainya.
+
+Atur `CLIENT_ORIGIN` pada backend ke origin frontend yang tepat, misalnya
+`https://domain-anda.com`. Beberapa origin dapat dipisahkan dengan koma.
+Origin harus mencocokkan protokol, host, dan port yang dipakai browser; jangan
+menambahkan path. Pada deployment satu domain, `VITE_API_URL` boleh dikosongkan
+hanya jika reverse proxy di host frontend meneruskan `/api` ke backend.
+
+Gunakan HTTPS untuk kedua layanan. Atur kredensial MySQL production dan
+`JWT_SECRET` yang kuat melalui environment variables hosting, bukan file yang
+diunggah. Verifikasi backend dari internet melalui
+`https://api.domain-anda.com/api/health`; status database harus `connected`.
+
+### Backend Railway untuk frontend Vercel
+
+Root project menyediakan `npm start` untuk menjalankan API backend. Pada
+service backend Railway, hubungkan MySQL Railway dan atur environment:
+
+```text
+NODE_ENV=production
+CLIENT_ORIGIN=https://bookpoint.vercel.app
+DB_HOST=${{MySQL.MYSQLHOST}}
+DB_PORT=${{MySQL.MYSQLPORT}}
+DB_USER=${{MySQL.MYSQLUSER}}
+DB_PASSWORD=${{MySQL.MYSQLPASSWORD}}
+DB_NAME=${{MySQL.MYSQLDATABASE}}
+JWT_SECRET=<secret acak minimal 32 karakter>
+```
+
+Ganti `MySQL` pada referensi variabel dengan nama service database di project
+Railway. Database perlu diinisialisasi dari `database/schema.sql` satu kali;
+pastikan database bernama `bookpoint` karena schema membuat dan memilih nama
+tersebut. Setelah API mendapat domain HTTPS Railway, set `VITE_API_URL` di
+Vercel menjadi `https://<domain-api-railway>/api`, lalu build/deploy ulang
+frontend. Verifikasi `/api/health` pada domain API sebelum mencoba login.
+
+Jika mengaktifkan upload bukti pembayaran, pasang Railway Volume pada
+`/app/backend/uploads` agar file tetap tersimpan setelah service restart.
+
 ## Akun awal
 Registrasi publik hanya membuat akun pelanggan. Setelah MySQL aktif, schema
 dibuat, dan `backend/.env` berisi konfigurasi DB serta `JWT_SECRET` acak minimal
