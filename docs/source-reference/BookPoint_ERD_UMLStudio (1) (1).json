@@ -1,0 +1,1725 @@
+{
+  "name": "BookPoint — ERD GOR Smash",
+  "diagrams": [
+    {
+      "id": "erd_bookpoint_001",
+      "type": "erd",
+      "title": "ERD Chen — BookPoint GOR Smash",
+      "nodes": [
+        {
+          "id": "e_pelanggan",
+          "kind": "entity",
+          "label": "Pelanggan",
+          "x": 80,
+          "y": 260,
+          "w": 125,
+          "h": 46
+        },
+        {
+          "id": "a_pelanggan_1",
+          "kind": "attribute",
+          "label": "id_pelanggan",
+          "attrType": "key",
+          "x": -99,
+          "y": 180,
+          "w": 120,
+          "h": 40
+        },
+        {
+          "id": "a_pelanggan_2",
+          "kind": "attribute",
+          "label": "nomor_hp (UNIQUE)",
+          "attrType": "normal",
+          "x": 269,
+          "y": 180,
+          "w": 160,
+          "h": 40
+        },
+        {
+          "id": "e_akun",
+          "kind": "entity",
+          "label": "Akun Pengguna",
+          "x": 420,
+          "y": 80,
+          "w": 139,
+          "h": 46
+        },
+        {
+          "id": "a_akun_1",
+          "kind": "attribute",
+          "label": "id_akun",
+          "attrType": "key",
+          "x": 251,
+          "y": 0,
+          "w": 92,
+          "h": 40
+        },
+        {
+          "id": "a_akun_2",
+          "kind": "attribute",
+          "label": "kata_sandi_hash",
+          "attrType": "normal",
+          "x": 605,
+          "y": 0,
+          "w": 144,
+          "h": 40
+        },
+        {
+          "id": "a_akun_3",
+          "kind": "attribute",
+          "label": "peran",
+          "attrType": "normal",
+          "x": 255,
+          "y": 62,
+          "w": 92,
+          "h": 40
+        },
+        {
+          "id": "a_akun_4",
+          "kind": "attribute",
+          "label": "id_pelanggan (FK, UK)",
+          "attrType": "normal",
+          "x": 617,
+          "y": 62,
+          "w": 192,
+          "h": 40
+        },
+        {
+          "id": "e_booking",
+          "kind": "entity",
+          "label": "Booking",
+          "x": 760,
+          "y": 260,
+          "w": 125,
+          "h": 46
+        },
+        {
+          "id": "a_booking_1",
+          "kind": "attribute",
+          "label": "id_booking",
+          "attrType": "key",
+          "x": 585,
+          "y": 180,
+          "w": 104,
+          "h": 40
+        },
+        {
+          "id": "a_booking_2",
+          "kind": "attribute",
+          "label": "id_pelanggan (FK)",
+          "attrType": "normal",
+          "x": 949,
+          "y": 180,
+          "w": 160,
+          "h": 40
+        },
+        {
+          "id": "a_booking_3",
+          "kind": "attribute",
+          "label": "status_booking",
+          "attrType": "normal",
+          "x": 577,
+          "y": 242,
+          "w": 136,
+          "h": 40
+        },
+        {
+          "id": "a_booking_4",
+          "kind": "attribute",
+          "label": "dibuat_pada",
+          "attrType": "normal",
+          "x": 937,
+          "y": 242,
+          "w": 112,
+          "h": 40
+        },
+        {
+          "id": "a_booking_5",
+          "kind": "attribute",
+          "label": "batas_bayar_dp",
+          "attrType": "normal",
+          "x": 577,
+          "y": 304,
+          "w": 136,
+          "h": 40
+        },
+        {
+          "id": "a_booking_6",
+          "kind": "attribute",
+          "label": "total_sewa",
+          "attrType": "normal",
+          "x": 935,
+          "y": 304,
+          "w": 104,
+          "h": 40
+        },
+        {
+          "id": "a_booking_7",
+          "kind": "attribute",
+          "label": "total_setelah_diskon",
+          "attrType": "normal",
+          "x": 565,
+          "y": 366,
+          "w": 184,
+          "h": 40
+        },
+        {
+          "id": "a_booking_8",
+          "kind": "attribute",
+          "label": "nominal_dp_wajib",
+          "attrType": "normal",
+          "x": 947,
+          "y": 366,
+          "w": 152,
+          "h": 40
+        },
+        {
+          "id": "a_booking_9",
+          "kind": "attribute",
+          "label": "dibuat_oleh_id_akun (FK)",
+          "attrType": "normal",
+          "x": 557,
+          "y": 428,
+          "w": 215,
+          "h": 40
+        },
+        {
+          "id": "e_detail",
+          "kind": "entity",
+          "label": "Detail Booking",
+          "x": 1120,
+          "y": 260,
+          "w": 147,
+          "h": 46
+        },
+        {
+          "id": "a_detail_1",
+          "kind": "attribute",
+          "label": "id_detail_booking",
+          "attrType": "key",
+          "x": 931,
+          "y": 180,
+          "w": 160,
+          "h": 40
+        },
+        {
+          "id": "a_detail_2",
+          "kind": "attribute",
+          "label": "id_booking (FK)",
+          "attrType": "normal",
+          "x": 1305,
+          "y": 180,
+          "w": 144,
+          "h": 40
+        },
+        {
+          "id": "a_detail_3",
+          "kind": "attribute",
+          "label": "id_lapangan (FK)",
+          "attrType": "normal",
+          "x": 933,
+          "y": 242,
+          "w": 152,
+          "h": 40
+        },
+        {
+          "id": "a_detail_4",
+          "kind": "attribute",
+          "label": "id_tarif (FK)",
+          "attrType": "normal",
+          "x": 1301,
+          "y": 242,
+          "w": 128,
+          "h": 40
+        },
+        {
+          "id": "a_detail_5",
+          "kind": "attribute",
+          "label": "tanggal_sewa",
+          "attrType": "normal",
+          "x": 941,
+          "y": 304,
+          "w": 120,
+          "h": 40
+        },
+        {
+          "id": "a_detail_6",
+          "kind": "attribute",
+          "label": "jam_mulai",
+          "attrType": "normal",
+          "x": 1293,
+          "y": 304,
+          "w": 96,
+          "h": 40
+        },
+        {
+          "id": "a_detail_7",
+          "kind": "attribute",
+          "label": "tarif_per_jam",
+          "attrType": "normal",
+          "x": 939,
+          "y": 366,
+          "w": 128,
+          "h": 40
+        },
+        {
+          "id": "a_detail_8",
+          "kind": "attribute",
+          "label": "diskon_persen",
+          "attrType": "normal",
+          "x": 1301,
+          "y": 366,
+          "w": 128,
+          "h": 40
+        },
+        {
+          "id": "a_detail_9",
+          "kind": "attribute",
+          "label": "subtotal",
+          "attrType": "normal",
+          "x": 949,
+          "y": 428,
+          "w": 92,
+          "h": 40
+        },
+        {
+          "id": "e_lapangan",
+          "kind": "entity",
+          "label": "Lapangan",
+          "x": 1500,
+          "y": 110,
+          "w": 125,
+          "h": 46
+        },
+        {
+          "id": "a_lapangan_1",
+          "kind": "attribute",
+          "label": "id_lapangan",
+          "attrType": "key",
+          "x": 1323,
+          "y": 30,
+          "w": 112,
+          "h": 40
+        },
+        {
+          "id": "a_lapangan_2",
+          "kind": "attribute",
+          "label": "nama_lapangan (UNIQUE)",
+          "attrType": "normal",
+          "x": 1699,
+          "y": 30,
+          "w": 200,
+          "h": 40
+        },
+        {
+          "id": "e_tarif",
+          "kind": "entity",
+          "label": "Tarif",
+          "x": 1500,
+          "y": 430,
+          "w": 125,
+          "h": 46
+        },
+        {
+          "id": "a_tarif_1",
+          "kind": "attribute",
+          "label": "id_tarif",
+          "attrType": "key",
+          "x": 1329,
+          "y": 350,
+          "w": 92,
+          "h": 40
+        },
+        {
+          "id": "a_tarif_2",
+          "kind": "attribute",
+          "label": "kategori_hari",
+          "attrType": "normal",
+          "x": 1681,
+          "y": 350,
+          "w": 128,
+          "h": 40
+        },
+        {
+          "id": "a_tarif_3",
+          "kind": "attribute",
+          "label": "jam_mulai",
+          "attrType": "normal",
+          "x": 1327,
+          "y": 412,
+          "w": 96,
+          "h": 40
+        },
+        {
+          "id": "a_tarif_4",
+          "kind": "attribute",
+          "label": "jam_selesai",
+          "attrType": "normal",
+          "x": 1677,
+          "y": 412,
+          "w": 112,
+          "h": 40
+        },
+        {
+          "id": "a_tarif_5",
+          "kind": "attribute",
+          "label": "nominal_per_jam",
+          "attrType": "normal",
+          "x": 1315,
+          "y": 474,
+          "w": 144,
+          "h": 40
+        },
+        {
+          "id": "e_jam_operasional",
+          "kind": "entity",
+          "label": "Jam Operasional",
+          "x": 1840,
+          "y": 260,
+          "w": 155,
+          "h": 46
+        },
+        {
+          "id": "a_jam_operasional_1",
+          "kind": "attribute",
+          "label": "id_jam_operasional",
+          "attrType": "key",
+          "x": 1649,
+          "y": 180,
+          "w": 168,
+          "h": 40
+        },
+        {
+          "id": "a_jam_operasional_2",
+          "kind": "attribute",
+          "label": "jam_buka",
+          "attrType": "normal",
+          "x": 2011,
+          "y": 180,
+          "w": 92,
+          "h": 40
+        },
+        {
+          "id": "a_jam_operasional_3",
+          "kind": "attribute",
+          "label": "jam_tutup",
+          "attrType": "normal",
+          "x": 1667,
+          "y": 242,
+          "w": 96,
+          "h": 40
+        },
+        {
+          "id": "e_pembayaran",
+          "kind": "entity",
+          "label": "Pembayaran",
+          "x": 760,
+          "y": 760,
+          "w": 125,
+          "h": 46
+        },
+        {
+          "id": "a_pembayaran_1",
+          "kind": "attribute",
+          "label": "id_pembayaran",
+          "attrType": "key",
+          "x": 579,
+          "y": 680,
+          "w": 128,
+          "h": 40
+        },
+        {
+          "id": "a_pembayaran_2",
+          "kind": "attribute",
+          "label": "id_booking (FK)",
+          "attrType": "normal",
+          "x": 945,
+          "y": 680,
+          "w": 144,
+          "h": 40
+        },
+        {
+          "id": "a_pembayaran_3",
+          "kind": "attribute",
+          "label": "jenis_pembayaran",
+          "attrType": "normal",
+          "x": 573,
+          "y": 742,
+          "w": 152,
+          "h": 40
+        },
+        {
+          "id": "a_pembayaran_4",
+          "kind": "attribute",
+          "label": "metode_pembayaran",
+          "attrType": "normal",
+          "x": 949,
+          "y": 742,
+          "w": 160,
+          "h": 40
+        },
+        {
+          "id": "a_pembayaran_5",
+          "kind": "attribute",
+          "label": "nominal_diterima",
+          "attrType": "normal",
+          "x": 573,
+          "y": 804,
+          "w": 152,
+          "h": 40
+        },
+        {
+          "id": "a_pembayaran_6",
+          "kind": "attribute",
+          "label": "status_pembayaran",
+          "attrType": "normal",
+          "x": 949,
+          "y": 804,
+          "w": 160,
+          "h": 40
+        },
+        {
+          "id": "a_pembayaran_7",
+          "kind": "attribute",
+          "label": "dibayar_pada",
+          "attrType": "normal",
+          "x": 581,
+          "y": 866,
+          "w": 120,
+          "h": 40
+        },
+        {
+          "id": "a_pembayaran_8",
+          "kind": "attribute",
+          "label": "bukti_transfer",
+          "attrType": "normal",
+          "x": 943,
+          "y": 866,
+          "w": 136,
+          "h": 40
+        },
+        {
+          "id": "a_pembayaran_9",
+          "kind": "attribute",
+          "label": "bukti_diunggah_pada",
+          "attrType": "normal",
+          "x": 567,
+          "y": 928,
+          "w": 176,
+          "h": 40
+        },
+        {
+          "id": "a_pembayaran_10",
+          "kind": "attribute",
+          "label": "diverifikasi_pada",
+          "attrType": "normal",
+          "x": 949,
+          "y": 928,
+          "w": 160,
+          "h": 40
+        },
+        {
+          "id": "a_pembayaran_11",
+          "kind": "attribute",
+          "label": "diverifikasi_oleh_id_akun (FK)",
+          "attrType": "normal",
+          "x": 545,
+          "y": 990,
+          "w": 215,
+          "h": 40
+        },
+        {
+          "id": "e_keanggotaan",
+          "kind": "entity",
+          "label": "Keanggotaan",
+          "x": 100,
+          "y": 760,
+          "w": 125,
+          "h": 46
+        },
+        {
+          "id": "a_keanggotaan_1",
+          "kind": "attribute",
+          "label": "id_keanggotaan",
+          "attrType": "key",
+          "x": -83,
+          "y": 680,
+          "w": 136,
+          "h": 40
+        },
+        {
+          "id": "a_keanggotaan_2",
+          "kind": "attribute",
+          "label": "id_pelanggan (FK)",
+          "attrType": "normal",
+          "x": 289,
+          "y": 680,
+          "w": 160,
+          "h": 40
+        },
+        {
+          "id": "a_keanggotaan_3",
+          "kind": "attribute",
+          "label": "tanggal_bayar_iuran",
+          "attrType": "normal",
+          "x": -93,
+          "y": 742,
+          "w": 176,
+          "h": 40
+        },
+        {
+          "id": "a_keanggotaan_4",
+          "kind": "attribute",
+          "label": "nominal_iuran",
+          "attrType": "normal",
+          "x": 281,
+          "y": 742,
+          "w": 128,
+          "h": 40
+        },
+        {
+          "id": "a_keanggotaan_5",
+          "kind": "attribute",
+          "label": "tanggal_mulai",
+          "attrType": "normal",
+          "x": -81,
+          "y": 804,
+          "w": 128,
+          "h": 40
+        },
+        {
+          "id": "a_keanggotaan_6",
+          "kind": "attribute",
+          "label": "tanggal_berakhir",
+          "attrType": "normal",
+          "x": 287,
+          "y": 804,
+          "w": 152,
+          "h": 40
+        },
+        {
+          "id": "e_pembatalan",
+          "kind": "entity",
+          "label": "Pembatalan Booking",
+          "x": 1120,
+          "y": 760,
+          "w": 179,
+          "h": 46
+        },
+        {
+          "id": "a_pembatalan_1",
+          "kind": "attribute",
+          "label": "id_pembatalan",
+          "attrType": "key",
+          "x": 939,
+          "y": 680,
+          "w": 128,
+          "h": 40
+        },
+        {
+          "id": "a_pembatalan_2",
+          "kind": "attribute",
+          "label": "id_booking (FK, UK)",
+          "attrType": "normal",
+          "x": 1313,
+          "y": 680,
+          "w": 176,
+          "h": 40
+        },
+        {
+          "id": "a_pembatalan_3",
+          "kind": "attribute",
+          "label": "jenis_pembatalan",
+          "attrType": "normal",
+          "x": 933,
+          "y": 742,
+          "w": 152,
+          "h": 40
+        },
+        {
+          "id": "a_pembatalan_4",
+          "kind": "attribute",
+          "label": "alasan_pembatalan",
+          "attrType": "normal",
+          "x": 1309,
+          "y": 742,
+          "w": 160,
+          "h": 40
+        },
+        {
+          "id": "a_pembatalan_5",
+          "kind": "attribute",
+          "label": "dibatalkan_pada",
+          "attrType": "normal",
+          "x": 935,
+          "y": 804,
+          "w": 144,
+          "h": 40
+        },
+        {
+          "id": "a_pembatalan_6",
+          "kind": "attribute",
+          "label": "dibatalkan_oleh_id_akun (FK)",
+          "attrType": "normal",
+          "x": 1331,
+          "y": 804,
+          "w": 215,
+          "h": 40
+        },
+        {
+          "id": "e_reschedule",
+          "kind": "entity",
+          "label": "Reschedule Booking",
+          "x": 1500,
+          "y": 760,
+          "w": 179,
+          "h": 46
+        },
+        {
+          "id": "a_reschedule_1",
+          "kind": "attribute",
+          "label": "id_reschedule",
+          "attrType": "key",
+          "x": 1319,
+          "y": 680,
+          "w": 128,
+          "h": 40
+        },
+        {
+          "id": "a_reschedule_2",
+          "kind": "attribute",
+          "label": "id_booking (FK, UK)",
+          "attrType": "normal",
+          "x": 1693,
+          "y": 680,
+          "w": 176,
+          "h": 40
+        },
+        {
+          "id": "a_reschedule_3",
+          "kind": "attribute",
+          "label": "diajukan_pada",
+          "attrType": "normal",
+          "x": 1319,
+          "y": 742,
+          "w": 128,
+          "h": 40
+        },
+        {
+          "id": "a_reschedule_4",
+          "kind": "attribute",
+          "label": "diproses_oleh_id_akun (FK)",
+          "attrType": "normal",
+          "x": 1707,
+          "y": 742,
+          "w": 215,
+          "h": 40
+        },
+        {
+          "id": "e_riwayat_booking",
+          "kind": "entity",
+          "label": "Riwayat Booking",
+          "x": 420,
+          "y": 1220,
+          "w": 155,
+          "h": 46
+        },
+        {
+          "id": "a_riwayat_booking_1",
+          "kind": "attribute",
+          "label": "id_riwayat_booking",
+          "attrType": "key",
+          "x": 229,
+          "y": 1140,
+          "w": 168,
+          "h": 40
+        },
+        {
+          "id": "a_riwayat_booking_2",
+          "kind": "attribute",
+          "label": "id_booking (FK)",
+          "attrType": "normal",
+          "x": 605,
+          "y": 1140,
+          "w": 144,
+          "h": 40
+        },
+        {
+          "id": "a_riwayat_booking_3",
+          "kind": "attribute",
+          "label": "id_akun_pelaku (FK)",
+          "attrType": "normal",
+          "x": 227,
+          "y": 1202,
+          "w": 176,
+          "h": 40
+        },
+        {
+          "id": "a_riwayat_booking_4",
+          "kind": "attribute",
+          "label": "jenis_perubahan",
+          "attrType": "normal",
+          "x": 605,
+          "y": 1202,
+          "w": 144,
+          "h": 40
+        },
+        {
+          "id": "a_riwayat_booking_5",
+          "kind": "attribute",
+          "label": "waktu_perubahan",
+          "attrType": "normal",
+          "x": 235,
+          "y": 1264,
+          "w": 144,
+          "h": 40
+        },
+        {
+          "id": "a_riwayat_booking_6",
+          "kind": "attribute",
+          "label": "data_sebelum",
+          "attrType": "normal",
+          "x": 599,
+          "y": 1264,
+          "w": 120,
+          "h": 40
+        },
+        {
+          "id": "a_riwayat_booking_7",
+          "kind": "attribute",
+          "label": "data_sesudah",
+          "attrType": "normal",
+          "x": 241,
+          "y": 1326,
+          "w": 120,
+          "h": 40
+        },
+        {
+          "id": "e_riwayat_pembayaran",
+          "kind": "entity",
+          "label": "Riwayat Pembayaran",
+          "x": 960,
+          "y": 1220,
+          "w": 179,
+          "h": 46
+        },
+        {
+          "id": "a_riwayat_pembayaran_1",
+          "kind": "attribute",
+          "label": "id_riwayat_pembayaran",
+          "attrType": "key",
+          "x": 763,
+          "y": 1140,
+          "w": 192,
+          "h": 40
+        },
+        {
+          "id": "a_riwayat_pembayaran_2",
+          "kind": "attribute",
+          "label": "id_pembayaran (FK)",
+          "attrType": "normal",
+          "x": 1151,
+          "y": 1140,
+          "w": 168,
+          "h": 40
+        },
+        {
+          "id": "a_riwayat_pembayaran_3",
+          "kind": "attribute",
+          "label": "id_akun_pelaku (FK)",
+          "attrType": "normal",
+          "x": 767,
+          "y": 1202,
+          "w": 176,
+          "h": 40
+        },
+        {
+          "id": "a_riwayat_pembayaran_4",
+          "kind": "attribute",
+          "label": "jenis_perubahan",
+          "attrType": "normal",
+          "x": 1145,
+          "y": 1202,
+          "w": 144,
+          "h": 40
+        },
+        {
+          "id": "a_riwayat_pembayaran_5",
+          "kind": "attribute",
+          "label": "waktu_perubahan",
+          "attrType": "normal",
+          "x": 775,
+          "y": 1264,
+          "w": 144,
+          "h": 40
+        },
+        {
+          "id": "a_riwayat_pembayaran_6",
+          "kind": "attribute",
+          "label": "data_sebelum",
+          "attrType": "normal",
+          "x": 1139,
+          "y": 1264,
+          "w": 120,
+          "h": 40
+        },
+        {
+          "id": "a_riwayat_pembayaran_7",
+          "kind": "attribute",
+          "label": "data_sesudah",
+          "attrType": "normal",
+          "x": 781,
+          "y": 1326,
+          "w": 120,
+          "h": 40
+        },
+        {
+          "id": "r_memiliki_akun",
+          "kind": "relationship",
+          "label": "Memiliki akun",
+          "x": 250,
+          "y": 160,
+          "w": 139,
+          "h": 64
+        },
+        {
+          "id": "r_membuat_booking",
+          "kind": "relationship",
+          "label": "Membuat",
+          "x": 420,
+          "y": 300,
+          "w": 112,
+          "h": 64
+        },
+        {
+          "id": "r_mencatat_booking",
+          "kind": "relationship",
+          "label": "Mencatat",
+          "x": 600,
+          "y": 160,
+          "w": 112,
+          "h": 64
+        },
+        {
+          "id": "r_berisi_detail",
+          "kind": "relationship",
+          "label": "Berisi",
+          "x": 940,
+          "y": 300,
+          "w": 112,
+          "h": 64
+        },
+        {
+          "id": "r_memakai_lapangan",
+          "kind": "relationship",
+          "label": "Memakai",
+          "x": 1320,
+          "y": 170,
+          "w": 112,
+          "h": 64
+        },
+        {
+          "id": "r_menggunakan_tarif",
+          "kind": "relationship",
+          "label": "Menggunakan tarif",
+          "x": 1320,
+          "y": 430,
+          "w": 165,
+          "h": 64
+        },
+        {
+          "id": "r_memiliki_pembayaran",
+          "kind": "relationship",
+          "label": "Memiliki",
+          "x": 760,
+          "y": 510,
+          "w": 112,
+          "h": 64
+        },
+        {
+          "id": "r_memverifikasi",
+          "kind": "relationship",
+          "label": "Memverifikasi",
+          "x": 590,
+          "y": 460,
+          "w": 139,
+          "h": 64
+        },
+        {
+          "id": "r_memiliki_keanggotaan",
+          "kind": "relationship",
+          "label": "Memiliki riwayat",
+          "x": 100,
+          "y": 510,
+          "w": 163,
+          "h": 64
+        },
+        {
+          "id": "r_dibatalkan",
+          "kind": "relationship",
+          "label": "Dibatalkan",
+          "x": 950,
+          "y": 650,
+          "w": 115,
+          "h": 64
+        },
+        {
+          "id": "r_pelaku_batal",
+          "kind": "relationship",
+          "label": "Memproses",
+          "x": 860,
+          "y": 470,
+          "w": 112,
+          "h": 64
+        },
+        {
+          "id": "r_di_reschedule",
+          "kind": "relationship",
+          "label": "Dipindahkan",
+          "x": 1140,
+          "y": 550,
+          "w": 123,
+          "h": 64
+        },
+        {
+          "id": "r_pelaku_reschedule",
+          "kind": "relationship",
+          "label": "Memproses",
+          "x": 1040,
+          "y": 440,
+          "w": 112,
+          "h": 64
+        },
+        {
+          "id": "r_riwayat_booking",
+          "kind": "relationship",
+          "label": "Dicatat dalam",
+          "x": 560,
+          "y": 920,
+          "w": 139,
+          "h": 64
+        },
+        {
+          "id": "r_pelaku_riwayat_booking",
+          "kind": "relationship",
+          "label": "Pelaku",
+          "x": 410,
+          "y": 650,
+          "w": 112,
+          "h": 64
+        },
+        {
+          "id": "r_riwayat_pembayaran",
+          "kind": "relationship",
+          "label": "Dicatat dalam",
+          "x": 850,
+          "y": 1010,
+          "w": 139,
+          "h": 64
+        },
+        {
+          "id": "r_pelaku_riwayat_pembayaran",
+          "kind": "relationship",
+          "label": "Pelaku",
+          "x": 720,
+          "y": 670,
+          "w": 112,
+          "h": 64
+        }
+      ],
+      "edges": [
+        {
+          "id": "er1",
+          "kind": "link",
+          "from": "a_pelanggan_1",
+          "to": "e_pelanggan"
+        },
+        {
+          "id": "er2",
+          "kind": "link",
+          "from": "a_pelanggan_2",
+          "to": "e_pelanggan"
+        },
+        {
+          "id": "er3",
+          "kind": "link",
+          "from": "a_akun_1",
+          "to": "e_akun"
+        },
+        {
+          "id": "er4",
+          "kind": "link",
+          "from": "a_akun_2",
+          "to": "e_akun"
+        },
+        {
+          "id": "er5",
+          "kind": "link",
+          "from": "a_akun_3",
+          "to": "e_akun"
+        },
+        {
+          "id": "er6",
+          "kind": "link",
+          "from": "a_akun_4",
+          "to": "e_akun"
+        },
+        {
+          "id": "er7",
+          "kind": "link",
+          "from": "a_booking_1",
+          "to": "e_booking"
+        },
+        {
+          "id": "er8",
+          "kind": "link",
+          "from": "a_booking_2",
+          "to": "e_booking"
+        },
+        {
+          "id": "er9",
+          "kind": "link",
+          "from": "a_booking_3",
+          "to": "e_booking"
+        },
+        {
+          "id": "er10",
+          "kind": "link",
+          "from": "a_booking_4",
+          "to": "e_booking"
+        },
+        {
+          "id": "er11",
+          "kind": "link",
+          "from": "a_booking_5",
+          "to": "e_booking"
+        },
+        {
+          "id": "er12",
+          "kind": "link",
+          "from": "a_booking_6",
+          "to": "e_booking"
+        },
+        {
+          "id": "er13",
+          "kind": "link",
+          "from": "a_booking_7",
+          "to": "e_booking"
+        },
+        {
+          "id": "er14",
+          "kind": "link",
+          "from": "a_booking_8",
+          "to": "e_booking"
+        },
+        {
+          "id": "er15",
+          "kind": "link",
+          "from": "a_booking_9",
+          "to": "e_booking"
+        },
+        {
+          "id": "er16",
+          "kind": "link",
+          "from": "a_detail_1",
+          "to": "e_detail"
+        },
+        {
+          "id": "er17",
+          "kind": "link",
+          "from": "a_detail_2",
+          "to": "e_detail"
+        },
+        {
+          "id": "er18",
+          "kind": "link",
+          "from": "a_detail_3",
+          "to": "e_detail"
+        },
+        {
+          "id": "er19",
+          "kind": "link",
+          "from": "a_detail_4",
+          "to": "e_detail"
+        },
+        {
+          "id": "er20",
+          "kind": "link",
+          "from": "a_detail_5",
+          "to": "e_detail"
+        },
+        {
+          "id": "er21",
+          "kind": "link",
+          "from": "a_detail_6",
+          "to": "e_detail"
+        },
+        {
+          "id": "er22",
+          "kind": "link",
+          "from": "a_detail_7",
+          "to": "e_detail"
+        },
+        {
+          "id": "er23",
+          "kind": "link",
+          "from": "a_detail_8",
+          "to": "e_detail"
+        },
+        {
+          "id": "er24",
+          "kind": "link",
+          "from": "a_detail_9",
+          "to": "e_detail"
+        },
+        {
+          "id": "er25",
+          "kind": "link",
+          "from": "a_lapangan_1",
+          "to": "e_lapangan"
+        },
+        {
+          "id": "er26",
+          "kind": "link",
+          "from": "a_lapangan_2",
+          "to": "e_lapangan"
+        },
+        {
+          "id": "er27",
+          "kind": "link",
+          "from": "a_tarif_1",
+          "to": "e_tarif"
+        },
+        {
+          "id": "er28",
+          "kind": "link",
+          "from": "a_tarif_2",
+          "to": "e_tarif"
+        },
+        {
+          "id": "er29",
+          "kind": "link",
+          "from": "a_tarif_3",
+          "to": "e_tarif"
+        },
+        {
+          "id": "er30",
+          "kind": "link",
+          "from": "a_tarif_4",
+          "to": "e_tarif"
+        },
+        {
+          "id": "er31",
+          "kind": "link",
+          "from": "a_tarif_5",
+          "to": "e_tarif"
+        },
+        {
+          "id": "er32",
+          "kind": "link",
+          "from": "a_jam_operasional_1",
+          "to": "e_jam_operasional"
+        },
+        {
+          "id": "er33",
+          "kind": "link",
+          "from": "a_jam_operasional_2",
+          "to": "e_jam_operasional"
+        },
+        {
+          "id": "er34",
+          "kind": "link",
+          "from": "a_jam_operasional_3",
+          "to": "e_jam_operasional"
+        },
+        {
+          "id": "er35",
+          "kind": "link",
+          "from": "a_pembayaran_1",
+          "to": "e_pembayaran"
+        },
+        {
+          "id": "er36",
+          "kind": "link",
+          "from": "a_pembayaran_2",
+          "to": "e_pembayaran"
+        },
+        {
+          "id": "er37",
+          "kind": "link",
+          "from": "a_pembayaran_3",
+          "to": "e_pembayaran"
+        },
+        {
+          "id": "er38",
+          "kind": "link",
+          "from": "a_pembayaran_4",
+          "to": "e_pembayaran"
+        },
+        {
+          "id": "er39",
+          "kind": "link",
+          "from": "a_pembayaran_5",
+          "to": "e_pembayaran"
+        },
+        {
+          "id": "er40",
+          "kind": "link",
+          "from": "a_pembayaran_6",
+          "to": "e_pembayaran"
+        },
+        {
+          "id": "er41",
+          "kind": "link",
+          "from": "a_pembayaran_7",
+          "to": "e_pembayaran"
+        },
+        {
+          "id": "er42",
+          "kind": "link",
+          "from": "a_pembayaran_8",
+          "to": "e_pembayaran"
+        },
+        {
+          "id": "er43",
+          "kind": "link",
+          "from": "a_pembayaran_9",
+          "to": "e_pembayaran"
+        },
+        {
+          "id": "er44",
+          "kind": "link",
+          "from": "a_pembayaran_10",
+          "to": "e_pembayaran"
+        },
+        {
+          "id": "er45",
+          "kind": "link",
+          "from": "a_pembayaran_11",
+          "to": "e_pembayaran"
+        },
+        {
+          "id": "er46",
+          "kind": "link",
+          "from": "a_keanggotaan_1",
+          "to": "e_keanggotaan"
+        },
+        {
+          "id": "er47",
+          "kind": "link",
+          "from": "a_keanggotaan_2",
+          "to": "e_keanggotaan"
+        },
+        {
+          "id": "er48",
+          "kind": "link",
+          "from": "a_keanggotaan_3",
+          "to": "e_keanggotaan"
+        },
+        {
+          "id": "er49",
+          "kind": "link",
+          "from": "a_keanggotaan_4",
+          "to": "e_keanggotaan"
+        },
+        {
+          "id": "er50",
+          "kind": "link",
+          "from": "a_keanggotaan_5",
+          "to": "e_keanggotaan"
+        },
+        {
+          "id": "er51",
+          "kind": "link",
+          "from": "a_keanggotaan_6",
+          "to": "e_keanggotaan"
+        },
+        {
+          "id": "er52",
+          "kind": "link",
+          "from": "a_pembatalan_1",
+          "to": "e_pembatalan"
+        },
+        {
+          "id": "er53",
+          "kind": "link",
+          "from": "a_pembatalan_2",
+          "to": "e_pembatalan"
+        },
+        {
+          "id": "er54",
+          "kind": "link",
+          "from": "a_pembatalan_3",
+          "to": "e_pembatalan"
+        },
+        {
+          "id": "er55",
+          "kind": "link",
+          "from": "a_pembatalan_4",
+          "to": "e_pembatalan"
+        },
+        {
+          "id": "er56",
+          "kind": "link",
+          "from": "a_pembatalan_5",
+          "to": "e_pembatalan"
+        },
+        {
+          "id": "er57",
+          "kind": "link",
+          "from": "a_pembatalan_6",
+          "to": "e_pembatalan"
+        },
+        {
+          "id": "er58",
+          "kind": "link",
+          "from": "a_reschedule_1",
+          "to": "e_reschedule"
+        },
+        {
+          "id": "er59",
+          "kind": "link",
+          "from": "a_reschedule_2",
+          "to": "e_reschedule"
+        },
+        {
+          "id": "er60",
+          "kind": "link",
+          "from": "a_reschedule_3",
+          "to": "e_reschedule"
+        },
+        {
+          "id": "er61",
+          "kind": "link",
+          "from": "a_reschedule_4",
+          "to": "e_reschedule"
+        },
+        {
+          "id": "er62",
+          "kind": "link",
+          "from": "a_riwayat_booking_1",
+          "to": "e_riwayat_booking"
+        },
+        {
+          "id": "er63",
+          "kind": "link",
+          "from": "a_riwayat_booking_2",
+          "to": "e_riwayat_booking"
+        },
+        {
+          "id": "er64",
+          "kind": "link",
+          "from": "a_riwayat_booking_3",
+          "to": "e_riwayat_booking"
+        },
+        {
+          "id": "er65",
+          "kind": "link",
+          "from": "a_riwayat_booking_4",
+          "to": "e_riwayat_booking"
+        },
+        {
+          "id": "er66",
+          "kind": "link",
+          "from": "a_riwayat_booking_5",
+          "to": "e_riwayat_booking"
+        },
+        {
+          "id": "er67",
+          "kind": "link",
+          "from": "a_riwayat_booking_6",
+          "to": "e_riwayat_booking"
+        },
+        {
+          "id": "er68",
+          "kind": "link",
+          "from": "a_riwayat_booking_7",
+          "to": "e_riwayat_booking"
+        },
+        {
+          "id": "er69",
+          "kind": "link",
+          "from": "a_riwayat_pembayaran_1",
+          "to": "e_riwayat_pembayaran"
+        },
+        {
+          "id": "er70",
+          "kind": "link",
+          "from": "a_riwayat_pembayaran_2",
+          "to": "e_riwayat_pembayaran"
+        },
+        {
+          "id": "er71",
+          "kind": "link",
+          "from": "a_riwayat_pembayaran_3",
+          "to": "e_riwayat_pembayaran"
+        },
+        {
+          "id": "er72",
+          "kind": "link",
+          "from": "a_riwayat_pembayaran_4",
+          "to": "e_riwayat_pembayaran"
+        },
+        {
+          "id": "er73",
+          "kind": "link",
+          "from": "a_riwayat_pembayaran_5",
+          "to": "e_riwayat_pembayaran"
+        },
+        {
+          "id": "er74",
+          "kind": "link",
+          "from": "a_riwayat_pembayaran_6",
+          "to": "e_riwayat_pembayaran"
+        },
+        {
+          "id": "er75",
+          "kind": "link",
+          "from": "a_riwayat_pembayaran_7",
+          "to": "e_riwayat_pembayaran"
+        },
+        {
+          "id": "er76",
+          "kind": "link",
+          "from": "e_pelanggan",
+          "to": "r_memiliki_akun",
+          "card": "1"
+        },
+        {
+          "id": "er77",
+          "kind": "link",
+          "from": "r_memiliki_akun",
+          "to": "e_akun",
+          "card": "0..1"
+        },
+        {
+          "id": "er78",
+          "kind": "link",
+          "from": "e_pelanggan",
+          "to": "r_membuat_booking",
+          "card": "1"
+        },
+        {
+          "id": "er79",
+          "kind": "link",
+          "from": "r_membuat_booking",
+          "to": "e_booking",
+          "card": "N"
+        },
+        {
+          "id": "er80",
+          "kind": "link",
+          "from": "e_akun",
+          "to": "r_mencatat_booking",
+          "card": "1"
+        },
+        {
+          "id": "er81",
+          "kind": "link",
+          "from": "r_mencatat_booking",
+          "to": "e_booking",
+          "card": "N"
+        },
+        {
+          "id": "er82",
+          "kind": "link",
+          "from": "e_booking",
+          "to": "r_berisi_detail",
+          "card": "1"
+        },
+        {
+          "id": "er83",
+          "kind": "link",
+          "from": "r_berisi_detail",
+          "to": "e_detail",
+          "card": "N"
+        },
+        {
+          "id": "er84",
+          "kind": "link",
+          "from": "e_detail",
+          "to": "r_memakai_lapangan",
+          "card": "N"
+        },
+        {
+          "id": "er85",
+          "kind": "link",
+          "from": "r_memakai_lapangan",
+          "to": "e_lapangan",
+          "card": "1"
+        },
+        {
+          "id": "er86",
+          "kind": "link",
+          "from": "e_detail",
+          "to": "r_menggunakan_tarif",
+          "card": "N"
+        },
+        {
+          "id": "er87",
+          "kind": "link",
+          "from": "r_menggunakan_tarif",
+          "to": "e_tarif",
+          "card": "1"
+        },
+        {
+          "id": "er88",
+          "kind": "link",
+          "from": "e_booking",
+          "to": "r_memiliki_pembayaran",
+          "card": "1"
+        },
+        {
+          "id": "er89",
+          "kind": "link",
+          "from": "r_memiliki_pembayaran",
+          "to": "e_pembayaran",
+          "card": "0..2"
+        },
+        {
+          "id": "er90",
+          "kind": "link",
+          "from": "e_akun",
+          "to": "r_memverifikasi",
+          "card": "1"
+        },
+        {
+          "id": "er91",
+          "kind": "link",
+          "from": "r_memverifikasi",
+          "to": "e_pembayaran",
+          "card": "N"
+        },
+        {
+          "id": "er92",
+          "kind": "link",
+          "from": "e_pelanggan",
+          "to": "r_memiliki_keanggotaan",
+          "card": "1"
+        },
+        {
+          "id": "er93",
+          "kind": "link",
+          "from": "r_memiliki_keanggotaan",
+          "to": "e_keanggotaan",
+          "card": "N"
+        },
+        {
+          "id": "er94",
+          "kind": "link",
+          "from": "e_booking",
+          "to": "r_dibatalkan",
+          "card": "1"
+        },
+        {
+          "id": "er95",
+          "kind": "link",
+          "from": "r_dibatalkan",
+          "to": "e_pembatalan",
+          "card": "0..1"
+        },
+        {
+          "id": "er96",
+          "kind": "link",
+          "from": "e_akun",
+          "to": "r_pelaku_batal",
+          "card": "1"
+        },
+        {
+          "id": "er97",
+          "kind": "link",
+          "from": "r_pelaku_batal",
+          "to": "e_pembatalan",
+          "card": "N"
+        },
+        {
+          "id": "er98",
+          "kind": "link",
+          "from": "e_booking",
+          "to": "r_di_reschedule",
+          "card": "1"
+        },
+        {
+          "id": "er99",
+          "kind": "link",
+          "from": "r_di_reschedule",
+          "to": "e_reschedule",
+          "card": "0..1"
+        },
+        {
+          "id": "er100",
+          "kind": "link",
+          "from": "e_akun",
+          "to": "r_pelaku_reschedule",
+          "card": "1"
+        },
+        {
+          "id": "er101",
+          "kind": "link",
+          "from": "r_pelaku_reschedule",
+          "to": "e_reschedule",
+          "card": "N"
+        },
+        {
+          "id": "er102",
+          "kind": "link",
+          "from": "e_booking",
+          "to": "r_riwayat_booking",
+          "card": "1"
+        },
+        {
+          "id": "er103",
+          "kind": "link",
+          "from": "r_riwayat_booking",
+          "to": "e_riwayat_booking",
+          "card": "N"
+        },
+        {
+          "id": "er104",
+          "kind": "link",
+          "from": "e_akun",
+          "to": "r_pelaku_riwayat_booking",
+          "card": "1"
+        },
+        {
+          "id": "er105",
+          "kind": "link",
+          "from": "r_pelaku_riwayat_booking",
+          "to": "e_riwayat_booking",
+          "card": "N"
+        },
+        {
+          "id": "er106",
+          "kind": "link",
+          "from": "e_pembayaran",
+          "to": "r_riwayat_pembayaran",
+          "card": "1"
+        },
+        {
+          "id": "er107",
+          "kind": "link",
+          "from": "r_riwayat_pembayaran",
+          "to": "e_riwayat_pembayaran",
+          "card": "N"
+        },
+        {
+          "id": "er108",
+          "kind": "link",
+          "from": "e_akun",
+          "to": "r_pelaku_riwayat_pembayaran",
+          "card": "1"
+        },
+        {
+          "id": "er109",
+          "kind": "link",
+          "from": "r_pelaku_riwayat_pembayaran",
+          "to": "e_riwayat_pembayaran",
+          "card": "N"
+        }
+      ],
+      "settings": {},
+      "data": {}
+    }
+  ],
+  "activeId": "erd_bookpoint_001"
+}

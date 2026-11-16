@@ -1,0 +1,13 @@
+const DAY_SECONDS=24*60*60;
+
+export function cancellationOutcome(secondsUntilStart,hasPaidDp){
+ if(!Number.isInteger(secondsUntilStart)) throw new TypeError('Waktu menuju jadwal harus berupa detik bulat.');
+ if(secondsUntilStart===DAY_SECONDS) return 'admin_review';
+ if(secondsUntilStart<DAY_SECONDS&&hasPaidDp) return 'dp_forfeit';
+ if(secondsUntilStart>DAY_SECONDS&&hasPaidDp) return 'manual_refund';
+ return 'cancel';
+}
+
+export function canReschedule(secondsUntilStart){
+ return Number.isInteger(secondsUntilStart)&&secondsUntilStart>DAY_SECONDS;
+}
