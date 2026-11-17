@@ -1,0 +1,124 @@
+erDiagram
+  PELANGGAN ||--o| AKUN_PENGGUNA : "memiliki akun"
+  PELANGGAN ||--o{ KEANGGOTAAN : "memiliki periode"
+  PELANGGAN ||--o{ BOOKING : "membuat"
+  AKUN_PENGGUNA ||--o{ BOOKING : "mencatat"
+  BOOKING ||--|{ DETAIL_BOOKING : "terdiri dari"
+  LAPANGAN ||--o{ DETAIL_BOOKING : "dipakai oleh"
+  BOOKING ||--o{ RESERVASI_SLOT : "menahan slot"
+  LAPANGAN ||--o{ RESERVASI_SLOT : "memiliki"
+  BOOKING ||--o{ PEMBAYARAN : "dibayar melalui"
+  KEANGGOTAAN ||--o{ PEMBAYARAN : "dibayar melalui"
+  AKUN_PENGGUNA ||--o{ PEMBAYARAN : "memverifikasi"
+  BOOKING ||--o{ PEMBATALAN_BOOKING : "dapat dibatalkan"
+  AKUN_PENGGUNA ||--o{ PEMBATALAN_BOOKING : "mencatat"
+  PEMBATALAN_BOOKING ||--o| PENGEMBALIAN_DANA : "ditindaklanjuti"
+  AKUN_PENGGUNA ||--o{ PENGEMBALIAN_DANA : "memproses"
+  BOOKING ||--o| RESCHEDULE_BOOKING : "maksimal satu kali"
+  AKUN_PENGGUNA ||--o{ RESCHEDULE_BOOKING : "mengubah"
+  BOOKING ||--o{ RIWAYAT_BOOKING : "memiliki audit"
+  AKUN_PENGGUNA o|--o{ RIWAYAT_BOOKING : "menjadi pelaku"
+  PEMBAYARAN ||--o{ RIWAYAT_PEMBAYARAN : "memiliki audit"
+  AKUN_PENGGUNA o|--o{ RIWAYAT_PEMBAYARAN : "menjadi pelaku"
+
+  PELANGGAN {
+    bigint id_pelanggan PK
+    varchar nama
+    varchar nomor_hp UK
+  }
+  AKUN_PENGGUNA {
+    bigint id_akun PK
+    bigint id_pelanggan FK
+    varchar username UK
+    enum peran
+    boolean aktif
+  }
+  LAPANGAN {
+    bigint id_lapangan PK
+    varchar nama UK
+    boolean aktif
+  }
+  TARIF {
+    bigint id_tarif PK
+    decimal harga_per_jam
+    time jam_mulai
+    time jam_selesai
+    boolean hari_akhir_pekan
+  }
+  JAM_OPERASIONAL {
+    bigint id_jam PK
+    tinyint hari UK
+    time jam_buka
+    time jam_tutup
+  }
+  KEANGGOTAAN {
+    bigint id_keanggotaan PK
+    bigint id_pelanggan FK
+    date mulai
+    date berakhir
+    decimal biaya
+  }
+  BOOKING {
+    bigint id_booking PK
+    bigint id_pelanggan FK
+    bigint dibuat_oleh FK
+    enum status_booking
+    decimal total_harga
+    decimal jumlah_dp
+    datetime batas_dp
+  }
+  DETAIL_BOOKING {
+    bigint id_detail PK
+    bigint id_booking FK
+    bigint id_lapangan FK
+    date tanggal
+    time jam_mulai
+    time jam_selesai
+    decimal harga
+  }
+  RESERVASI_SLOT {
+    bigint id_lapangan PK, FK
+    date tanggal PK
+    time jam_mulai PK
+    bigint id_booking FK
+  }
+  PEMBAYARAN {
+    bigint id_pembayaran PK
+    bigint id_booking FK
+    bigint id_keanggotaan FK
+    enum jenis
+    decimal nominal
+    enum status
+    bigint id_booking_dp UK
+  }
+  PEMBATALAN_BOOKING {
+    bigint id_pembatalan PK
+    bigint id_booking FK
+    bigint pembatal_oleh FK
+    boolean dp_hangus
+    enum status_pengembalian
+  }
+  PENGEMBALIAN_DANA {
+    bigint id_pengembalian PK
+    bigint id_pembatalan FK, UK
+    decimal nominal
+    bigint diproses_oleh FK
+  }
+  RESCHEDULE_BOOKING {
+    bigint id_reschedule PK
+    bigint id_booking FK, UK
+    text jadwal_lama
+    text jadwal_baru
+  }
+  RIWAYAT_BOOKING {
+    bigint id_riwayat PK
+    bigint id_booking FK
+    bigint dilakukan_oleh FK
+    datetime created_at
+  }
+  RIWAYAT_PEMBAYARAN {
+    bigint id_riwayat PK
+    bigint id_pembayaran FK
+    bigint dilakukan_oleh FK
+    datetime created_at
+  }

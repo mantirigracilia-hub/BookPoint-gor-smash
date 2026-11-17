@@ -1,0 +1,184 @@
+Project bookpoint {
+  database_type: 'MySQL'
+  Note: 'Model diselaraskan dengan database/schema.sql; cek SQL sebagai sumber implementasi.'
+}
+
+Table pelanggan {
+  id_pelanggan bigint [pk, increment]
+  nama varchar(120) [not null]
+  nomor_hp varchar(20) [not null, unique]
+  email varchar(150)
+  created_at timestamp
+}
+
+Table akun_pengguna {
+  id_akun bigint [pk, increment]
+  id_pelanggan bigint [unique]
+  username varchar(80) [unique]
+  kata_sandi_hash varchar(255) [not null]
+  peran enum('customer', 'admin', 'owner') [not null, default: 'customer']
+  aktif boolean [not null, default: true]
+  created_at timestamp
+}
+
+Table lapangan {
+  id_lapangan bigint [pk, increment]
+  nama varchar(60) [not null, unique]
+  aktif boolean [default: true]
+}
+
+Table tarif {
+  id_tarif bigint [pk, increment]
+  nama varchar(80) [not null]
+  harga_per_jam decimal(12,2) [not null]
+  jam_mulai time
+  jam_selesai time
+  hari_akhir_pekan boolean [default: false]
+  aktif boolean [default: true]
+}
+
+Table jam_operasional {
+  id_jam bigint [pk, increment]
+  hari tinyint [not null, unique, note: '0 Minggu sampai 6 Sabtu; jam SRS 07:00–23:00']
+  jam_buka time [not null, default: '07:00:00']
+  jam_tutup time [not null, default: '23:00:00']
+}
+
+Table keanggotaan {
+  id_keanggotaan bigint [pk, increment]
+  id_pelanggan bigint [not null]
+  mulai date [not null]
+  berakhir date [not null]
+  biaya decimal(12,2) [not null, default: 150000]
+  status enum('aktif', 'berakhir') [default: 'aktif', note: 'Status efektif dihitung dari rentang tanggal']
+}
+
+Table booking {
+  id_booking bigint [pk, increment]
+  kode_booking varchar(30) [not null, unique]
+  id_pelanggan bigint [not null]
+  dibuat_oleh bigint [not null]
+  status_booking enum('menunggu_dp', 'terkonfirmasi', 'lunas', 'dibatalkan') [not null, default: 'menunggu_dp']
+  total_harga decimal(12,2) [not null]
+  jumlah_dp decimal(12,2) [not null]
+  batas_dp datetime [not null]
+  catatan text
+  created_at timestamp
+  updated_at timestamp
+
+  indexes {
+    status_booking [name: 'idx_booking_status']
+  }
+}
+
+Table detail_booking {
+  id_detail bigint [pk, increment]
+  id_booking bigint [not null]
+  id_lapangan bigint [not null]
+  tanggal date [not null]
+  jam_mulai time [not null]
+  jam_selesai time [not null]
+  harga decimal(12,2) [not null]
+
+  indexes {
+    (tanggal, id_lapangan, jam_mulai, jam_selesai) [name: 'idx_slot']
+  }
+}
+
+Table reservasi_slot {
+  id_lapangan bigint [not null]
+  tanggal date [not null]
+  jam_mulai time [not null]
+  id_booking bigint [not null]
+
+  indexes {
+    (id_lapangan, tanggal, jam_mulai) [pk]
+    id_booking [name: 'idx_reservasi_booking']
+  }
+}
+
+Table pembayaran {
+  id_pembayaran bigint [pk, increment]
+  id_booking bigint
+  id_keanggotaan bigint
+  jenis enum('dp', 'pelunasan', 'membership') [not null]
+  metode enum('transfer', 'tunai') [not null]
+  nominal decimal(12,2) [not null]
+  bukti_file varchar(255)
+  status enum('menunggu_verifikasi', 'diterima', 'ditolak') [not null, default: 'menunggu_verifikasi']
+  id_booking_dp bigint [unique, note: 'Generated key; hanya DP berstatus menunggu_verifikasi/diterima']
+  diverifikasi_oleh bigint
+  waktu_bayar datetime
+  created_at timestamp
+}
+
+Table pembatalan_booking {
+  id_pembatalan bigint [pk, increment]
+  id_booking bigint [not null]
+  alasan text [not null]
+  pembatal_oleh bigint [not null]
+  dp_hangus boolean [default: false]
+  status_permohonan enum('menunggu_admin', 'disetujui', 'ditolak') [not null, default: 'disetujui', note: 'Kolom kompatibilitas migrasi; workflow persetujuan tidak digunakan']
+  status_pengembalian enum('tidak_ada', 'menunggu', 'selesai') [not null, default: 'tidak_ada']
+  created_at timestamp
+}
+
+Table pengembalian_dana {
+  id_pengembalian bigint [pk, increment]
+  id_pembatalan bigint [not null, unique]
+  nominal decimal(12,2) [not null]
+  metode enum('transfer', 'tunai') [not null]
+  diproses_oleh bigint [not null]
+  waktu_pengembalian datetime [not null]
+}
+
+Table reschedule_booking {
+  id_reschedule bigint [pk, increment]
+  id_booking bigint [not null, unique]
+  jadwal_lama text [not null]
+  jadwal_baru text [not null]
+  diubah_oleh bigint [not null]
+  created_at timestamp
+}
+
+Table riwayat_booking {
+  id_riwayat bigint [pk, increment]
+  id_booking bigint [not null]
+  status_sebelum varchar(40)
+  status_sesudah varchar(40)
+  keterangan text
+  dilakukan_oleh bigint
+  created_at timestamp
+}
+
+Table riwayat_pembayaran {
+  id_riwayat bigint [pk, increment]
+  id_pembayaran bigint [not null]
+  status_sebelum varchar(40)
+  status_sesudah varchar(40)
+  nominal_diterima decimal(12,2)
+  dilakukan_oleh bigint
+  created_at timestamp
+}
+
+Ref: akun_pengguna.id_pelanggan - pelanggan.id_pelanggan
+Ref: keanggotaan.id_pelanggan > pelanggan.id_pelanggan
+Ref: booking.id_pelanggan > pelanggan.id_pelanggan
+Ref: booking.dibuat_oleh > akun_pengguna.id_akun
+Ref: detail_booking.id_booking > booking.id_booking
+Ref: detail_booking.id_lapangan > lapangan.id_lapangan
+Ref: reservasi_slot.id_booking > booking.id_booking
+Ref: reservasi_slot.id_lapangan > lapangan.id_lapangan
+Ref: pembayaran.id_booking > booking.id_booking
+Ref: pembayaran.id_keanggotaan > keanggotaan.id_keanggotaan
+Ref: pembayaran.diverifikasi_oleh > akun_pengguna.id_akun
+Ref: pembatalan_booking.id_booking > booking.id_booking
+Ref: pembatalan_booking.pembatal_oleh > akun_pengguna.id_akun
+Ref: pengembalian_dana.id_pembatalan - pembatalan_booking.id_pembatalan
+Ref: pengembalian_dana.diproses_oleh > akun_pengguna.id_akun
+Ref: reschedule_booking.id_booking - booking.id_booking
+Ref: reschedule_booking.diubah_oleh > akun_pengguna.id_akun
+Ref: riwayat_booking.id_booking > booking.id_booking
+Ref: riwayat_booking.dilakukan_oleh > akun_pengguna.id_akun
+Ref: riwayat_pembayaran.id_pembayaran > pembayaran.id_pembayaran
+Ref: riwayat_pembayaran.dilakukan_oleh > akun_pengguna.id_akun
