@@ -1,12 +1,22 @@
 import React,{useCallback,useEffect,useMemo,useState} from 'react';
 import axios from 'axios';
 
-const API=import.meta.env.VITE_API_URL?.trim()||(import.meta.env.DEV?'http://localhost:5000/api':'/api');
+const API=import.meta.env.VITE_API_URL?.trim()||(import.meta.env.DEV?`${window.location.protocol}//${window.location.hostname}:5000/api`:'/api');
 const api=axios.create({baseURL:API});
 api.interceptors.request.use(config=>{
  const token=localStorage.getItem('bp_token');
  if(token) config.headers.Authorization=`Bearer ${token}`;
  return config;
+});
+// Token kedaluwarsa (12 jam) atau akun dinonaktifkan: keluarkan sesi agar UI tidak terjebak sebagai "login" palsu.
+api.interceptors.response.use(response=>response,error=>{
+ const url=String(error.config?.url||'');
+ if(error.response?.status===401&&localStorage.getItem('bp_token')&&!url.startsWith('/auth/')){
+  localStorage.removeItem('bp_token');
+  localStorage.removeItem('bp_user');
+  window.dispatchEvent(new Event('bp:unauthorized'));
+ }
+ return Promise.reject(error);
 });
 
 const money=value=>new Intl.NumberFormat('id-ID',{style:'currency',currency:'IDR',maximumFractionDigits:0}).format(Number(value||0));
@@ -63,6 +73,7 @@ function App(){
  const [proof,setProof]=useState(null);
  const [bookingDetail,setBookingDetail]=useState(null);
  const [confirmBooking,setConfirmBooking]=useState(false);
+ const [transferInfo,setTransferInfo]=useState(null);
 
  const run=useCallback(async action=>{
   setError('');
@@ -76,7 +87,7 @@ function App(){
  const loadSchedule=useCallback(async()=>{
   const {data}=await api.get('/bookings/schedule',{params:{date}});
   setSchedule(data);
- },[date]);
+ },[date,user?.id]); // user?.id: muat ulang saat login/logout agar harga & status member sesuai akun
 
  const loadBookings=useCallback(async()=>{
   if(!user)return;
@@ -124,11 +135,25 @@ function App(){
  },[user,loadBookings,loadAdminData,loadMaster,run]);
 
  useEffect(()=>{
+  if(user?.role!=='customer'){setTransferInfo(null);return;}
+  api.get('/payments/instructions').then(({data})=>setTransferInfo(data)).catch(()=>setTransferInfo(null));
+ },[user]);
+
+ useEffect(()=>{
   if(user?.role!=='owner'||page!=='booking-history')return;
   run(async()=>{await loadBookings();});
  },[user,page,loadBookings,run]);
 
  useEffect(()=>()=>{if(proof?.url)URL.revokeObjectURL(proof.url);},[proof]);
+
+ useEffect(()=>{
+  const handleUnauthorized=()=>{
+   setUser(null);setPage('login');setAuthMode('login');setSchedule(null);setSelected([]);
+   setBookings([]);setBookingsLoaded(false);setAdminDataLoaded(false);setMasterLoaded(false);
+  };
+  window.addEventListener('bp:unauthorized',handleUnauthorized);
+  return ()=>window.removeEventListener('bp:unauthorized',handleUnauthorized);
+ },[]);
 
  const selectedTotal=useMemo(()=>selected.reduce((sum,slot)=>sum+Number(slot.price||0),0),[selected]);
  const selectedDeposit=Math.ceil(selectedTotal/2);
@@ -190,6 +215,7 @@ function App(){
     const {data}=await api.post(`/bookings/${rescheduleTarget.id_booking}/reschedule`,{items});
     setNotice(`${data.message} Total sewa ${money(data.total)}; sudah dibayar ${money(data.paid)}; sisa tagihan ${money(data.balanceDue)}.`);
     setRescheduleTarget(null);
+    setPage('bookings');
    }else if(user?.role==='admin'){
     const {data}=await api.post('/bookings/admin',{...manual,items});
     setNotice(`Booking ${data.code} berhasil dibuat; status ${statusName[data.status]}.`);
@@ -283,8 +309,9 @@ function App(){
  }
 
  async function settleBooking(booking){
-  const tender=Number(settlementInputs[booking.id_booking]);
-  if(!Number.isFinite(tender)){setError('Masukkan nominal uang yang diterima.');return;}
+  const rawTender=settlementInputs[booking.id_booking];
+  const tender=Number(rawTender);
+  if(rawTender===undefined||String(rawTender).trim()===''||!Number.isFinite(tender)||tender<0){setError('Masukkan nominal uang yang diterima.');return;}
   const result=await run(async()=>{
    const {data}=await api.post(`/payments/${booking.id_booking}/settle`,{nominal:tender});
    setNotice(`${data.message} Kembalian ${money(data.change)}.`);
@@ -322,8 +349,10 @@ function App(){
  }
 
  async function processRefund(refund){
-  const nominal=Number(window.prompt(`Nominal pengembalian (maksimal ${money(refund.nominal_refund)}):`,String(refund.nominal_refund)));
-  if(!Number.isFinite(nominal))return;
+  const input=window.prompt(`Nominal pengembalian (maksimal ${money(refund.nominal_refund)}):`,String(refund.nominal_refund));
+  if(input===null)return;
+  const nominal=Number(input);
+  if(!input.trim()||!Number.isFinite(nominal)||nominal<=0){setError('Nominal pengembalian tidak valid.');return;}
   const result=await run(async()=>{
    const {data}=await api.post(`/payments/refunds/${refund.id_pembatalan}/complete`,{nominal,metode:'transfer'});
    setNotice(data.message);
@@ -487,23 +516,139 @@ function App(){
    {!user&&<div className="schedule-cta"><span>Masuk atau daftar untuk memilih slot dan membuat booking.</span><button className="primary" onClick={()=>{setAuthMode('login');setPage('login');}}>Masuk / Daftar</button></div>}
   </section>;
  }
+function renderCustomerBookings(){
+  return <section className="panel">
+    <div className="panel-head">
+      <div>
+        <p className="eyebrow">RIWAYAT RESERVASI</p>
+        <h2>Booking saya</h2>
+        <p className="muted">Status, pembayaran, dan rincian jadwal tersimpan di sini.</p>
+      </div>
+      <button className="outline" onClick={refreshAll}>Perbarui</button>
+    </div>
 
- function renderCustomerBookings(){
-  return <section className="panel"><div className="panel-head"><div><p className="eyebrow">RIWAYAT RESERVASI</p><h2>Booking saya</h2><p className="muted">Status, pembayaran, dan rincian jadwal tersimpan di sini.</p></div><button className="outline" onClick={refreshAll}>Perbarui</button></div>
-   {!bookings.length?<div className="empty">{bookingsLoaded?'Belum ada booking.':'Memuat booking Anda…'}</div>:<div className="cards">{bookings.map(booking=>{
-    const due=Math.max(0,Number(booking.total_harga)-Number(booking.dp_diterima||0)-Number(booking.pelunasan_diterima||0));
-    return <article className="booking-card" key={booking.id_booking}>
-     <div className="spread"><div><span className="eyebrow">KODE BOOKING</span><h3>{booking.kode_booking}</h3></div><Status value={booking.status_booking}/></div>
-     <p className="booking-schedule">{booking.jadwal}</p>
-     <div className="amount-grid"><span>Total sewa<strong>{money(booking.total_harga)}</strong></span><span>DP diterima<strong>{money(booking.dp_diterima||0)}</strong></span><span>Sisa tagihan<strong>{money(due)}</strong></span></div>
-     {booking.status_booking==='menunggu_dp'&&<><p className="deadline">Batas DP: {new Date(String(booking.batas_dp).replace(' ','T')).toLocaleString('id-ID')} · <Countdown deadline={booking.batas_dp}/></p><label className="upload">Unggah bukti transfer (maks. 5 MB)<input type="file" accept="image/png,image/jpeg,image/webp" onChange={event=>uploadProof(booking.id_booking,event.target.files?.[0])}/></label></>}
-     {booking.status_booking==='dibatalkan'&&<p className="muted">Pembatalan tercatat. Pengembalian dana (jika berlaku) diproses manual.</p>}
-     <div className="actions"><button className="outline" onClick={()=>openBookingDetail(booking)}>Rincian & riwayat</button>{['menunggu_dp','terkonfirmasi','lunas'].includes(booking.status_booking)&&<button className="danger" onClick={()=>cancelBooking(booking)}>Batalkan booking</button>}
-      {booking.status_booking==='terkonfirmasi'&&Number(booking.jumlah_reschedule)===0&&<button className="outline" onClick={()=>startReschedule(booking)}>Ubah jadwal (1 kali)</button>}</div>
-    </article>;
-   })}</div>}
+    {!bookings.length
+      ? <div className="empty">{bookingsLoaded?'Belum ada booking.':'Memuat booking Anda…'}</div>
+      : <div className="cards">
+        {bookings.map(booking=>{
+          const due=Math.max(
+            0,
+            Number(booking.total_harga)-
+            Number(booking.dp_diterima||0)-
+            Number(booking.pelunasan_diterima||0)
+          );
+
+          const dpStatus=booking.status_dp_terakhir;
+
+          const canUpload=
+            booking.status_booking==='menunggu_dp' &&
+            (!dpStatus || dpStatus==='ditolak');
+
+          return <article className="booking-card" key={booking.id_booking}>
+            <div className="spread">
+              <div>
+                <span className="eyebrow">KODE BOOKING</span>
+                <h3>{booking.kode_booking}</h3>
+              </div>
+              <Status value={booking.status_booking}/>
+            </div>
+
+            <p className="booking-schedule">{booking.jadwal}</p>
+
+            <div className="amount-grid">
+              <span>Total sewa<strong>{money(booking.total_harga)}</strong></span>
+              <span>DP diterima<strong>{money(booking.dp_diterima||0)}</strong></span>
+              <span>Sisa tagihan<strong>{money(due)}</strong></span>
+            </div>
+
+            {booking.status_booking === 'menunggu_dp' && dpStatus === 'menunggu_verifikasi' &&
+              <p className="muted">
+                Bukti pembayaran DP sudah dikirim dan sedang menunggu verifikasi Admin.
+              </p>
+            }
+
+            {booking.status_booking === 'menunggu_dp' && dpStatus === 'ditolak' &&
+              <p className="payment-mismatch">
+                Bukti DP ditolak Admin. Silakan periksa pembayaran Anda dan unggah ulang bukti transfer.
+              </p>
+            }
+
+             {['terkonfirmasi', 'lunas'].includes(booking.status_booking) && dpStatus === 'diterima' &&
+              <p className="muted">
+                DP berhasil diverifikasi oleh Admin.
+              </p>
+            }
+
+            {booking.status_booking === 'menunggu_dp' && <>
+              <p className="deadline">
+                Batas DP: {new Date(String(booking.batas_dp).replace(' ', 'T')).toLocaleString('id-ID')}
+                {' · '}
+                <Countdown deadline={booking.batas_dp} />
+              </p>
+
+              <div className="transfer-info">
+                <strong>Instruksi transfer DP {money(booking.jumlah_dp)}</strong>
+                {transferInfo?.configured
+                  ? <p>{transferInfo.bank} · {transferInfo.accountNumber} · a.n. {transferInfo.accountName}</p>
+                  : <p className="muted">Rekening tujuan belum tersedia di aplikasi. Hubungi admin GOR untuk nomor rekening.</p>
+                }
+                <small>
+                  Booking batal otomatis jika DP belum diverifikasi sebelum batas waktu.
+                </small>
+              </div>
+
+              {canUpload
+                ? <label className="upload">
+                    {dpStatus==='ditolak'?'Unggah ulang bukti transfer (maks. 5 MB)':'Unggah bukti transfer (maks. 5 MB)'}
+                    <input
+                      type="file"
+                      accept="image/png,image/jpeg,image/webp"
+                      onChange={event=>{
+                        const file=event.target.files?.[0];
+                        uploadProof(booking.id_booking,file);
+                        event.target.value='';
+                      }}
+                    />
+                  </label>
+                : dpStatus==='menunggu_verifikasi'
+                  ? <p className="muted">Silakan tunggu hasil pemeriksaan Admin. Anda belum dapat mengunggah bukti baru.</p>
+                  : null
+              }
+            </>}
+
+            {booking.status_booking==='dibatalkan'&&
+              <p className="muted">
+                Pembatalan tercatat. Pengembalian dana (jika berlaku) diproses manual.
+              </p>
+            }
+
+            <div className="actions">
+              <button className="outline" onClick={()=>openBookingDetail(booking)}>
+                Rincian & riwayat
+              </button>
+
+              {['menunggu_dp','terkonfirmasi','lunas'].includes(booking.status_booking)&&
+                <button className="danger" onClick={()=>cancelBooking(booking)}>
+                  Batalkan booking
+                </button>
+              }
+
+              {['terkonfirmasi','lunas'].includes(booking.status_booking)&&
+                Number(booking.jumlah_reschedule)===0&&
+                booking.waktu_mulai_pertama&&
+                (new Date(booking.waktu_mulai_pertama).getTime()-Date.now())>24*60*60*1000&&
+                <button className="outline" onClick={()=>startReschedule(booking)}>
+                  Ubah jadwal (1 kali)
+                </button>
+              }
+            </div>
+          </article>;
+        })}
+      </div>
+    }
   </section>;
- }
+}
+
 
  function renderAdminBookings(){
   const filtered=bookings.filter(item=>{
@@ -621,7 +766,7 @@ function App(){
    <div className="report-grid">
    <section className="panel report-panel"><div className="panel-head"><div><p className="eyebrow">LAPORAN KEUANGAN</p><h2>Pendapatan diterima</h2></div></div>
     <div className="toolbar"><select value={reportPeriod} onChange={event=>setReportPeriod(event.target.value)}><option value="day">Harian</option><option value="month">Bulanan</option></select>{reportPeriod==='day'?<input type="date" value={reportDate} onChange={event=>setReportDate(event.target.value)}/>:<input type="month" value={reportMonth} onChange={event=>setReportMonth(event.target.value)}/>}<button className="primary" onClick={loadRevenue}>Tampilkan</button></div>
-    {report?<><div className="metric-grid"><Metric label="Total bersih diterima" value={money(report.summary.total)}/><Metric label="DP transfer" value={money(report.summary.deposit)}/><Metric label="Pelunasan" value={money(report.summary.settlement)}/><Metric label="Iuran member" value={money(report.summary.membership)}/><Metric label="Pengembalian DP" value={money(report.summary.refund)}/></div><div className="table-wrap"><table><thead><tr><th>Tanggal</th><th>Jenis transaksi</th><th>Jumlah transaksi</th><th>Pendapatan</th></tr></thead><tbody>{report.series.map((row,index)=><tr key={index}><td>{readableDate(row.tanggal)}</td><td>{row.jenis==='dp'?'DP':row.jenis==='pelunasan'?'Pelunasan':row.jenis==='pengembalian'?'Pengembalian DP':'Membership'}</td><td>{row.transaksi}</td><td>{money(row.pendapatan)}</td></tr>)}</tbody></table></div></>:<div className="empty">Pilih periode dan tampilkan laporan.</div>}
+    {report?<><div className="metric-grid"><Metric label="Total bersih diterima" value={money(report.summary.total)}/><Metric label="DP diterima" value={money(report.summary.deposit)}/><Metric label="Pelunasan" value={money(report.summary.settlement)}/><Metric label="Iuran member" value={money(report.summary.membership)}/><Metric label="Pengembalian DP" value={money(report.summary.refund)}/></div><div className="table-wrap"><table><thead><tr><th>Tanggal</th><th>Jenis transaksi</th><th>Jumlah transaksi</th><th>Pendapatan</th></tr></thead><tbody>{report.series.map((row,index)=><tr key={index}><td>{readableDate(row.tanggal)}</td><td>{row.jenis==='dp'?'DP':row.jenis==='pelunasan'?'Pelunasan':row.jenis==='pengembalian'?'Pengembalian DP':'Membership'}</td><td>{row.transaksi}</td><td>{money(row.pendapatan)}</td></tr>)}</tbody></table></div></>:<div className="empty">Pilih periode dan tampilkan laporan.</div>}
    </section>
    <section className="panel report-panel"><div className="panel-head"><div><p className="eyebrow">PENGELOLAAN KAPASITAS</p><h2>Okupansi lapangan</h2></div></div>
     <div className="toolbar"><label className="field-inline">Dari<input type="date" value={occupancyRange.start} onChange={event=>setOccupancyRange({...occupancyRange,start:event.target.value})}/></label><label className="field-inline">Sampai<input type="date" value={occupancyRange.end} onChange={event=>setOccupancyRange({...occupancyRange,end:event.target.value})}/></label><button className="primary" onClick={loadOccupancy}>Tampilkan</button></div>
@@ -643,7 +788,7 @@ function App(){
 
  if(!user&&page==='login')return <main className="auth-page"><section className="auth-card"><button className="back-link" onClick={()=>setPage('home')}>← Kembali</button><div className="brand-icon">BP</div><p className="eyebrow">GOR SMASH · BADMINTON COURT</p><h1>{authMode==='login'?'Selamat datang kembali':'Buat akun BookPoint'}</h1><p className="muted">{authMode==='login'?'Masuk untuk mengelola reservasi Anda.':'Daftar sebagai pelanggan dengan nomor HP unik.'}</p><div className="tabs"><button className={authMode==='login'?'active':''} onClick={()=>setAuthMode('login')}>Masuk</button><button className={authMode==='register'?'active':''} onClick={()=>setAuthMode('register')}>Daftar pelanggan</button></div><form onSubmit={submitAuth}>{authMode==='register'&&<label>Nama lengkap<input required maxLength="120" value={authForm.nama} onChange={event=>setAuthForm({...authForm,nama:event.target.value})}/></label>}<label>{authMode==='login'?'Username atau nomor HP':'Nomor HP'}<input type={authMode==='login'?'text':'tel'} inputMode={authMode==='login'?'text':'numeric'} autoComplete={authMode==='login'?'username':'tel'} required pattern={authMode==='register'?'0[0-9]{8,19}':undefined} value={authForm.identifier} onChange={event=>setAuthForm({...authForm,identifier:event.target.value})} placeholder={authMode==='login'?'Masukkan username atau 08xxxxxxxxxx':'08xxxxxxxxxx'}/></label><label>Password<input required minLength="8" type="password" autoComplete={authMode==='login'?'current-password':'new-password'} value={authForm.password} onChange={event=>setAuthForm({...authForm,password:event.target.value})}/></label><button className="primary full" disabled={busy}>{authMode==='login'?'Masuk':'Buat akun'}</button></form><p className="small-note">Admin dan pemilik masuk memakai username. Pelanggan masuk memakai nomor HP. Registrasi publik hanya untuk pelanggan.</p><Feedback error={error} notice={notice}/></section></main>;
 
- if(!user&&page==='home')return <div className="public-site">
+ if(!user&&page!=='public-schedule')return <div className="public-site">
   <header className="site-header"><a className="brand" href="#" onClick={event=>{event.preventDefault();setPage('home');}}><span className="brand-icon">BP</span><span><strong>BookPoint</strong><small>GOR Smash</small></span></a><nav><a href="#fitur">Fitur</a><a href="#cara-kerja">Cara kerja</a><a href="#harga">Harga</a></nav><div className="toolbar"><button className="outline" onClick={()=>{setAuthMode('login');setPage('login');}}>Masuk</button><button className="primary" onClick={()=>{setAuthMode('register');setPage('login');}}>Booking sekarang</button></div></header>
   <main><section className="hero"><div className="hero-copy"><span className="pill">Reservasi lapangan lebih praktis</span><h1>Waktunya main,<br/><em>bukan menunggu.</em></h1><p>Temukan jadwal lapangan yang tersedia, pesan beberapa slot sekaligus, dan pantau konfirmasi pembayaran dalam satu tempat.</p><div className="toolbar"><button className="primary" onClick={()=>{setAuthMode('register');setPage('login');}}>Mulai booking <span>→</span></button><button className="text-button" onClick={()=>setPage('public-schedule')}>Lihat jadwal publik</button></div><div className="hero-facts"><span><strong>4</strong> lapangan</span><span><strong>07–23</strong> setiap hari</span><span><strong>10%</strong> diskon member</span></div></div></section>
    <section className="feature-section" id="fitur"><div className="section-title"><span className="eyebrow">UNTUK PERMAINAN ANDA</span><h2>Semua yang dibutuhkan,<br/>dalam satu reservasi.</h2></div><div className="feature-grid"><Feature icon="◷" title="Jadwal yang jelas" text="Lihat ketersediaan empat lapangan berdasarkan tanggal dan jam."/><Feature icon="↗" title="Booking lebih mudah" text="Pilih beberapa jam atau lapangan dalam satu transaksi dan satu DP."/><Feature icon="✓" title="Status terpantau" text="Unggah bukti transfer dan pantau konfirmasi booking Anda."/><Feature icon="♧" title="Keuntungan member" text="Dapatkan diskon 10% dan akses booking hingga 14 hari ke depan."/></div></section>
@@ -675,7 +820,8 @@ function App(){
     <footer className="app-footer">BookPoint · GOR Smash <span>Informasi booking dan pembayaran tercatat sesuai aktivitas.</span></footer>
    </main>
   </div>
-  {confirmBooking&&<div className="modal-backdrop" onClick={event=>event.target===event.currentTarget&&setConfirmBooking(false)}><section className="modal"><div className="spread"><div><p className="eyebrow">KONFIRMASI</p><h2>{rescheduleTarget?'Periksa jadwal baru':'Ringkasan booking'}</h2></div><button className="icon-button" onClick={()=>setConfirmBooking(false)}>×</button></div><p>{selected.length} slot pada {readableDate(date)}</p><ul className="selected-list">{selected.map((slot,index)=><li key={`${slot.courtId}-${slot.hour}-${index}`}><span>{slot.court} · {String(slot.hour).padStart(2,'0')}:00–{String(slot.hour+1).padStart(2,'0')}:00</span><strong>{money(slot.price)}</strong></li>)}</ul><div className="amount-row"><span>Total sewa</span><strong>{money(selectedTotal)}</strong></div><div className="amount-row"><span>DP 50%</span><strong>{money(selectedDeposit)}</strong></div>{user.role==='customer'&&<p className="muted">Booking menunggu verifikasi DP. Slot ditahan paling lama dua jam.</p>}{user.role==='admin'&&<p className="muted">Nama pelanggan: {manual.nama||'Belum diisi'} · DP {manual.depositMethod==='tunai'?'diterima tunai':'menunggu transfer'}.</p>}<button className="primary full" disabled={busy} onClick={createBooking}>{busy?'Menyimpan…':rescheduleTarget?'Simpan jadwal baru':'Konfirmasi dan buat booking'}</button></section></div>}
+  {confirmBooking&&<div className="modal-backdrop" onClick={event=>event.target===event.currentTarget&&setConfirmBooking(false)}><section className="modal"><div className="spread"><div><p className="eyebrow">KONFIRMASI</p><h2>{rescheduleTarget?'Periksa jadwal baru':'Ringkasan booking'}</h2></div><button className="icon-button" onClick={()=>setConfirmBooking(false)}>×</button></div>
+  <p>{selected.length} slot pada {readableDate(date)}</p><Feedback error={error} notice={notice}/><ul className="selected-list">{selected.map((slot,index)=><li key={`${slot.courtId}-${slot.hour}-${index}`}><span>{slot.court} · {String(slot.hour).padStart(2,'0')}:00–{String(slot.hour+1).padStart(2,'0')}:00</span><strong>{money(slot.price)}</strong></li>)}</ul><div className="amount-row"><span>Total sewa</span><strong>{money(selectedTotal)}</strong></div><div className="amount-row"><span>DP 50%</span><strong>{money(selectedDeposit)}</strong></div>{user.role==='customer'&&<p className="muted">Booking menunggu verifikasi DP. Slot ditahan paling lama dua jam.</p>}{user.role==='admin'&&<p className="muted">Nama pelanggan: {manual.nama||'Belum diisi'} · DP {manual.depositMethod==='tunai'?'diterima tunai':'menunggu transfer'}.</p>}<button className="primary full" disabled={busy} onClick={createBooking}>{busy?'Menyimpan…':rescheduleTarget?'Simpan jadwal baru':'Konfirmasi dan buat booking'}</button></section></div>}
   {proof&&<div className="modal-backdrop" onClick={event=>event.target===event.currentTarget&&setProof(null)}><section className="modal proof-modal"><div className="spread"><h2>Bukti transfer</h2><button className="icon-button" onClick={()=>setProof(null)}>×</button></div><img src={proof.url} alt={`Bukti transfer ${proof.name}`}/></section></div>}
   {bookingDetail&&<div className="modal-backdrop" onClick={event=>event.target===event.currentTarget&&setBookingDetail(null)}><section className="modal detail-modal"><div className="spread"><div><p className="eyebrow">RINCIAN & AUDIT</p><h2>{bookingDetail.kode_booking}</h2></div><button className="icon-button" onClick={()=>setBookingDetail(null)}>×</button></div><p>{bookingDetail.nama} · {bookingDetail.nomor_hp}</p><Status value={bookingDetail.status_booking}/><h3>Jadwal</h3>{bookingDetail.items?.map(item=><div className="amount-row" key={item.id_detail}><span>{item.nama_lapangan} · {readableDate(item.tanggal)} · {item.jam_mulai_text}–{item.jam_selesai_text}</span><strong>{money(item.harga)}</strong></div>)}<div className="amount-row"><span>Total sewa</span><strong>{money(bookingDetail.total_harga)}</strong></div><h3>Pembayaran</h3>{bookingDetail.payments?.length?bookingDetail.payments.map(payment=><div className="list-row" key={payment.id_pembayaran}><span>{payment.jenis==='dp'?'DP':payment.jenis==='pelunasan'?'Pelunasan':'Membership'} · {statusName[payment.status]||payment.status}</span><strong>{money(payment.nominal)}</strong></div>):<p className="muted">Belum ada transaksi pembayaran.</p>}<h3>Riwayat perubahan</h3>{bookingDetail.history?.length?bookingDetail.history.map((item,index)=><div className="audit-row" key={`${item.created_at}-${index}`}><span>{new Date(String(item.created_at).replace(' ','T')).toLocaleString('id-ID')}</span><strong>{item.aktor}</strong><p>{item.keterangan||`${item.status_sebelum||'—'} → ${item.status_sesudah}`}</p></div>):<p className="muted">Belum ada riwayat.</p>}</section></div>}
  </div>;

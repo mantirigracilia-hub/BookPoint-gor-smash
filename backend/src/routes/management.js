@@ -3,12 +3,13 @@ import bcrypt from 'bcryptjs';
 import {pool} from '../db.js';
 import {auth,allow} from '../middleware/auth.js';
 import {isValidOperatingHours} from '../managementPolicy.js';
+import {errorDetail,publicMessage} from '../dbErrors.js';
 
 const r=Router();
 
 r.get('/courts',auth,allow('owner'),async(req,res)=>{
  try{const [rows]=await pool.query('SELECT id_lapangan,nama,aktif FROM lapangan ORDER BY id_lapangan');res.json(rows);}
- catch(e){res.status(500).json({message:'Gagal memuat data lapangan.',detail:e.message});}
+ catch(e){res.status(500).json({message:'Gagal memuat data lapangan.',detail:errorDetail(e)});}
 });
 
 r.post('/courts',auth,allow('owner'),async(req,res)=>{
@@ -17,7 +18,7 @@ r.post('/courts',auth,allow('owner'),async(req,res)=>{
   if(!name||name.length>60) return res.status(400).json({message:'Nama lapangan wajib diisi (maksimal 60 karakter).'});
   const [result]=await pool.query('INSERT INTO lapangan(nama,aktif) VALUES(?,TRUE)',[name]);
   res.status(201).json({id:result.insertId,nama:name,aktif:true});
- }catch(e){res.status(e.code==='ER_DUP_ENTRY'?409:500).json({message:e.code==='ER_DUP_ENTRY'?'Nama lapangan sudah digunakan.':'Gagal menambahkan lapangan.',detail:e.message});}
+ }catch(e){res.status(e.code==='ER_DUP_ENTRY'?409:500).json({message:e.code==='ER_DUP_ENTRY'?'Nama lapangan sudah digunakan.':'Gagal menambahkan lapangan.',detail:errorDetail(e)});}
 });
 
 r.put('/courts/:id',auth,allow('owner'),async(req,res)=>{
@@ -33,12 +34,12 @@ r.put('/courts/:id',auth,allow('owner'),async(req,res)=>{
   const [result]=await pool.query('UPDATE lapangan SET nama=?,aktif=? WHERE id_lapangan=?',[name,active,req.params.id]);
   if(!result.affectedRows) return res.status(404).json({message:'Lapangan tidak ditemukan.'});
   res.json({message:'Data lapangan diperbarui.'});
- }catch(e){res.status(e.code==='ER_DUP_ENTRY'?409:500).json({message:e.code==='ER_DUP_ENTRY'?'Nama lapangan sudah digunakan.':'Gagal memperbarui lapangan.',detail:e.message});}
+ }catch(e){res.status(e.code==='ER_DUP_ENTRY'?409:500).json({message:e.code==='ER_DUP_ENTRY'?'Nama lapangan sudah digunakan.':'Gagal memperbarui lapangan.',detail:errorDetail(e)});}
 });
 
 r.get('/rates',auth,allow('owner'),async(req,res)=>{
  try{const [rows]=await pool.query('SELECT id_tarif,nama,harga_per_jam,jam_mulai,jam_selesai,hari_akhir_pekan,aktif FROM tarif ORDER BY id_tarif');res.json(rows);}
- catch(e){res.status(500).json({message:'Gagal memuat tarif.',detail:e.message});}
+ catch(e){res.status(500).json({message:'Gagal memuat tarif.',detail:errorDetail(e)});}
 });
 
 r.put('/rates',auth,allow('owner'),async(req,res)=>{
@@ -53,13 +54,13 @@ r.put('/rates',auth,allow('owner'),async(req,res)=>{
   if(!normal.affectedRows||!peak.affectedRows||!weekend.affectedRows) throw new Error('Tarif normal, prime time, atau weekend belum tersedia.');
   await conn.commit();
   res.json({message:'Tarif berhasil diperbarui.'});
- }catch(e){await conn.rollback();res.status(400).json({message:e.message});}
+ }catch(e){await conn.rollback();res.status(400).json({message:publicMessage(e)});}
  finally{conn.release();}
 });
 
 r.get('/hours',auth,allow('owner'),async(req,res)=>{
  try{const [rows]=await pool.query('SELECT hari,jam_buka,jam_tutup FROM jam_operasional ORDER BY hari');res.json(rows);}
- catch(e){res.status(500).json({message:'Gagal memuat jam operasional.',detail:e.message});}
+ catch(e){res.status(500).json({message:'Gagal memuat jam operasional.',detail:errorDetail(e)});}
 });
 
 r.put('/hours',auth,allow('owner'),async(req,res)=>{
@@ -71,7 +72,7 @@ r.put('/hours',auth,allow('owner'),async(req,res)=>{
   for(const row of hours) await conn.query('UPDATE jam_operasional SET jam_buka=?,jam_tutup=? WHERE hari=?',[`${row.jam_buka}:00`,`${row.jam_tutup}:00`,row.hari]);
   await conn.commit();
   res.json({message:'Jam operasional diperbarui.'});
- }catch(e){await conn.rollback();res.status(500).json({message:'Gagal memperbarui jam operasional.',detail:e.message});}
+ }catch(e){await conn.rollback();res.status(500).json({message:'Gagal memperbarui jam operasional.',detail:errorDetail(e)});}
  finally{conn.release();}
 });
 
@@ -79,17 +80,19 @@ r.get('/admins',auth,allow('owner'),async(req,res)=>{
  try{
   const [rows]=await pool.query(`SELECT id_akun,username,aktif,created_at FROM akun_pengguna WHERE peran='admin' ORDER BY username`);
   res.json(rows);
- }catch(e){res.status(500).json({message:'Gagal memuat akun admin.',detail:e.message});}
+ }catch(e){res.status(500).json({message:'Gagal memuat akun admin.',detail:errorDetail(e)});}
 });
 
 r.post('/admins',auth,allow('owner'),async(req,res)=>{
  try{
   const username=String(req.body.username||'').trim(),password=String(req.body.password||'');
   if(!/^[a-zA-Z0-9._-]{3,80}$/.test(username)||password.length<8) return res.status(400).json({message:'Username (3–80 karakter) dan password minimal 8 karakter wajib diisi.'});
+  if(/^0\d{8,19}$/.test(username)) return res.status(400).json({message:'Username tidak boleh berupa nomor HP agar tidak bentrok dengan login pelanggan.'});
+  if(Buffer.byteLength(password,'utf8')>72) return res.status(400).json({message:'Password maksimal 72 byte.'});
   const hash=await bcrypt.hash(password,12);
   const [result]=await pool.query("INSERT INTO akun_pengguna(username,kata_sandi_hash,peran) VALUES(?,?,'admin')",[username,hash]);
   res.status(201).json({id:result.insertId,username,aktif:true});
- }catch(e){res.status(e.code==='ER_DUP_ENTRY'?409:500).json({message:e.code==='ER_DUP_ENTRY'?'Username sudah digunakan.':'Gagal membuat akun admin.',detail:e.message});}
+ }catch(e){res.status(e.code==='ER_DUP_ENTRY'?409:500).json({message:e.code==='ER_DUP_ENTRY'?'Username sudah digunakan.':'Gagal membuat akun admin.',detail:errorDetail(e)});}
 });
 
 r.patch('/admins/:id',auth,allow('owner'),async(req,res)=>{
@@ -99,7 +102,7 @@ r.patch('/admins/:id',auth,allow('owner'),async(req,res)=>{
   const [result]=await pool.query("UPDATE akun_pengguna SET aktif=? WHERE id_akun=? AND peran='admin'",[active,req.params.id]);
   if(!result.affectedRows) return res.status(404).json({message:'Akun admin tidak ditemukan.'});
   res.json({message:active?'Akun admin diaktifkan.':'Akun admin dinonaktifkan.'});
- }catch(e){res.status(500).json({message:'Gagal memperbarui akun admin.',detail:e.message});}
+ }catch(e){res.status(500).json({message:'Gagal memperbarui akun admin.',detail:errorDetail(e)});}
 });
 
 export default r;

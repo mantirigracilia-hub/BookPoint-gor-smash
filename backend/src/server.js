@@ -13,14 +13,16 @@ import managementRoutes from './routes/management.js';
 import {pool} from './db.js';
 import {DATABASE_UNAVAILABLE_MESSAGE,isDatabaseUnavailable} from './dbErrors.js';
 dotenv.config();
+const isProduction=process.env.NODE_ENV==='production';
+if(!process.env.JWT_SECRET) throw new Error('JWT_SECRET wajib diatur di backend/.env.');
+if(isProduction&&process.env.JWT_SECRET.length<32) throw new Error('JWT_SECRET production minimal 32 karakter.');
 const app=express();
 const __dirname=path.dirname(fileURLToPath(import.meta.url));
 fs.mkdirSync(path.join(__dirname,'../uploads'),{recursive:true});
-const isProduction=process.env.NODE_ENV==='production';
 const allowedOrigins=(process.env.CLIENT_ORIGIN||(isProduction?'':'http://localhost:5173')).split(',').map(origin=>origin.trim()).filter(Boolean);
 if(isProduction&&allowedOrigins.length===0)throw new Error('CLIENT_ORIGIN wajib diatur di production ke origin frontend yang diizinkan.');
 app.use(cors({origin:(origin,callback)=>{
- const localDevOrigin=!isProduction&&/^https?:\/\/(localhost|127\.0\.0\.1):517[3-9]$/.test(origin||'');
+ const localDevOrigin=!isProduction&&/^https?:\/\/(localhost|127\.0\.0\.1|192\.168\.\d{1,3}\.\d{1,3}|10\.\d{1,3}\.\d{1,3}\.\d{1,3}|172\.(1[6-9]|2\d|3[01])\.\d{1,3}\.\d{1,3}):517[3-9]$/.test(origin||'');
  callback(null,!origin||allowedOrigins.includes(origin)||localDevOrigin);
 }}));
 app.use(express.json());
@@ -50,7 +52,10 @@ app.use((err,req,res,next)=>{
 });
 const port=process.env.PORT||5000;
 // Cleanup expired pending-DP bookings every minute; slots become available after cancellation.
+let cleanupRunning=false;
 setInterval(async()=>{
+ if(cleanupRunning) return;
+ cleanupRunning=true;
  let conn;
  try{
   conn=await pool.getConnection();
@@ -68,6 +73,6 @@ setInterval(async()=>{
   }
   await conn.commit();
  }catch(e){if(conn) await conn.rollback();console.error('Cleanup booking:',e.message);}
- finally{if(conn) conn.release();}
+ finally{if(conn) conn.release();cleanupRunning=false;}
 },60000);
 app.listen(port,()=>console.log(`BookPoint API berjalan di http://localhost:${port}`));

@@ -2,6 +2,7 @@ import {Router} from 'express';
 import {pool} from '../db.js';
 import {auth,allow} from '../middleware/auth.js';
 import {membershipStatus} from '../membershipPolicy.js';
+import {errorDetail,publicMessage} from '../dbErrors.js';
 
 const r=Router();
 
@@ -14,7 +15,7 @@ r.get('/',auth,allow('admin'),async(req,res)=>{
    ...membership,
    status_terkini:membershipStatus(membership.mulai,membership.berakhir,tanggal_hari_ini)
   })));
- }catch(e){res.status(500).json({message:'Gagal memuat data member.',detail:e.message});}
+ }catch(e){res.status(500).json({message:'Gagal memuat data member.',detail:errorDetail(e)});}
 });
 
 r.post('/',auth,allow('admin'),async(req,res)=>{
@@ -27,12 +28,9 @@ r.post('/',auth,allow('admin'),async(req,res)=>{
   await conn.beginTransaction();
   let id=customerId;
   if(!id){
-   const [created]=await conn.query('INSERT INTO pelanggan(nama,nomor_hp) VALUES(?,?) ON DUPLICATE KEY UPDATE nama=VALUES(nama)',[name,phone]);
-   if(created.insertId) id=created.insertId;
-   else{
-    const [[customer]]=await conn.query('SELECT id_pelanggan FROM pelanggan WHERE nomor_hp=?',[phone]);
-    id=customer.id_pelanggan;
-   }
+   await conn.query('INSERT INTO pelanggan(nama,nomor_hp) VALUES(?,?) ON DUPLICATE KEY UPDATE nama=VALUES(nama)',[name,phone]);
+   const [[found]]=await conn.query('SELECT id_pelanggan FROM pelanggan WHERE nomor_hp=?',[phone]);
+   id=found?.id_pelanggan||0;
   }
   const [[customer]]=await conn.query('SELECT id_pelanggan FROM pelanggan WHERE id_pelanggan=?',[id]);
   if(!customer) throw new Error('Pelanggan tidak ditemukan.');
@@ -47,7 +45,7 @@ r.post('/',auth,allow('admin'),async(req,res)=>{
   await conn.query("INSERT INTO riwayat_pembayaran(id_pembayaran,status_sesudah,nominal_diterima,dilakukan_oleh) VALUES(?,'diterima',150000,?)",[payment.insertId,req.user.id]);
   await conn.commit();
   res.status(201).json({message:'Membership 30 hari berhasil dicatat.',id:membership.insertId,customerId:id,fee:150000});
- }catch(e){await conn.rollback();res.status(400).json({message:e.code==='ER_DUP_ENTRY'?'Data pelanggan duplikat. Periksa nomor HP.':e.message});}
+ }catch(e){await conn.rollback();res.status(400).json({message:e.code==='ER_DUP_ENTRY'?'Data pelanggan duplikat. Periksa nomor HP.':publicMessage(e)});}
  finally{conn.release();}
 });
 

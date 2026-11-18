@@ -11,11 +11,15 @@ Sistem reservasi lapangan badminton berbasis SRS v2.0.
 ## Menjalankan aplikasi
 1. Install Node.js LTS dan MySQL 8.
 2. Untuk database baru, jalankan `database/schema.sql` di MySQL Workbench.
-   Untuk database lama, backup terlebih dahulu lalu jalankan
-   `database/migrations/001_srs_workflows.sql` satu kali. Jangan jalankan
-   migrasi pada database baru yang sudah dibuat dari schema terkini.
+   Untuk database lama, backup terlebih dahulu lalu jalankan migrasi yang
+   belum pernah dijalankan, berurutan: `001_srs_workflows.sql`, lalu
+   `002_unique_tarif.sql` (hapus tarif ganda). Jangan jalankan migrasi pada
+   database baru yang sudah dibuat dari schema terkini.
 3. Salin `backend/.env.example` menjadi `backend/.env`, lalu isi kredensial
    MySQL dan ganti `JWT_SECRET` dengan nilai acak yang kuat (minimal 32 karakter).
+   Isi `PAYMENT_BANK_NAME`, `PAYMENT_ACCOUNT_NUMBER`, dan `PAYMENT_ACCOUNT_NAME` agar instruksi transfer DP tampil ke pelanggan (REQ-09).
+   Atur juga `DB_TIME_ZONE` ke offset zona waktu GOR (WITA = `+08:00`). Tanpa ini,
+   hosting berzona UTC membuat slot "lewat" dan batas DP 2 jam meleset berjam-jam.
 4. Dari root project jalankan `npm install`, lalu `npm run dev`.
 
 Frontend: http://localhost:5173  
@@ -28,6 +32,8 @@ dan backend pada host/domain berbeda, atur variabel build frontend
 `VITE_API_URL` ke URL publik backend dengan akhiran `/api`, misalnya
 `https://api.domain-anda.com/api`. Vite menyematkan variabel ini saat build,
 jadi build dan deploy ulang frontend setelah mengubah nilainya.
+
+Tambahkan `DB_TIME_ZONE=+08:00` (atau offset GOR Anda) pada environment backend.
 
 Atur `CLIENT_ORIGIN` pada backend ke origin frontend yang tepat, misalnya
 `https://domain-anda.com`. Beberapa origin dapat dipisahkan dengan koma.

@@ -2,18 +2,15 @@ import {Router} from 'express';
 import {randomBytes} from 'crypto';
 import {pool} from '../db.js';
 import {auth,allow,optionalAuth} from '../middleware/auth.js';
+import {isValidDate} from '../dateUtils.js';
 import {canReschedule,cancellationOutcome,isHourWithinOperatingHours,isSlotInPast} from '../bookingPolicy.js';
+import {errorDetail,publicMessage} from '../dbErrors.js';
 
 const r=Router();
 const ACTIVE_STATUSES=['menunggu_dp','terkonfirmasi','lunas'];
 const toTime=hour=>`${String(hour).padStart(2,'0')}:00:00`;
 const asMoney=value=>Number(value||0);
 
-function isValidDate(value){
- if(typeof value!=='string'||!/^\d{4}-\d{2}-\d{2}$/.test(value)) return false;
- const date=new Date(`${value}T00:00:00Z`);
- return !Number.isNaN(date.valueOf())&&date.toISOString().slice(0,10)===value;
-}
 
 async function getRates(conn){
  const [rows]=await conn.query('SELECT nama,harga_per_jam,jam_mulai,jam_selesai,hari_akhir_pekan FROM tarif WHERE aktif=1');
@@ -109,7 +106,7 @@ r.get('/schedule',optionalAuth,async(req,res)=>{
    slots.push({courtId:court.id_lapangan,court:court.nama,hour,status,price:slotPrice(date,hour,rates,!!member)});
   }
   res.json({date,openingHours:{start,end},isMember:!!member,courts,slots});
- }catch(e){res.status(500).json({message:'Gagal memuat jadwal',detail:e.message});}
+ }catch(e){res.status(500).json({message:'Gagal memuat jadwal',detail:errorDetail(e)});}
 });
 
 r.post('/',auth,allow('customer'),async(req,res)=>{
@@ -119,21 +116,74 @@ r.post('/',auth,allow('customer'),async(req,res)=>{
   const data=await createBooking(conn,{items:req.body.items,customerId:req.user.customerId,actorId:req.user.id,catatan:req.body.catatan});
   await conn.commit();
   res.status(201).json(data);
- }catch(e){await conn.rollback();res.status(400).json({message:e.code==='ER_DUP_ENTRY'?'Slot baru saja dipesan. Silakan pilih slot lain.':e.message});}
+ }catch(e){await conn.rollback();res.status(400).json({message:e.code==='ER_DUP_ENTRY'?'Slot baru saja dipesan. Silakan pilih slot lain.':publicMessage(e)});}
  finally{conn.release();}
 });
 
+
 r.get('/mine',auth,allow('customer'),async(req,res)=>{
- try{
-  const [rows]=await pool.query(`SELECT b.*,GROUP_CONCAT(CONCAT(l.nama,' ',DATE_FORMAT(d.tanggal,'%d/%m/%Y'),' ',TIME_FORMAT(d.jam_mulai,'%H:%i')) ORDER BY d.tanggal,d.jam_mulai SEPARATOR ', ') jadwal,
-   COALESCE((SELECT SUM(p.nominal) FROM pembayaran p WHERE p.id_booking=b.id_booking AND p.jenis='dp' AND p.status='diterima'),0) dp_diterima,
-   COALESCE((SELECT SUM(p.nominal) FROM pembayaran p WHERE p.id_booking=b.id_booking AND p.jenis='pelunasan' AND p.status='diterima'),0) pelunasan_diterima,
-   (SELECT COUNT(*) FROM reschedule_booking rb WHERE rb.id_booking=b.id_booking) jumlah_reschedule
-   FROM booking b JOIN detail_booking d ON d.id_booking=b.id_booking JOIN lapangan l ON l.id_lapangan=d.id_lapangan
-   WHERE b.id_pelanggan=? GROUP BY b.id_booking ORDER BY b.created_at DESC`,[req.user.customerId]);
-  res.json(rows);
- }catch(e){res.status(500).json({message:'Gagal memuat booking',detail:e.message});}
+  try{
+    const [rows]=await pool.query(`SELECT
+      b.*,
+      DATE_FORMAT(MIN(TIMESTAMP(d.tanggal,d.jam_mulai)),'%Y-%m-%dT%H:%i:%s') AS waktu_mulai_pertama,
+      GROUP_CONCAT(
+        CONCAT(
+          l.nama,' ',
+          DATE_FORMAT(d.tanggal,'%d/%m/%Y'),' ',
+          TIME_FORMAT(d.jam_mulai,'%H:%i')
+        )
+        ORDER BY d.tanggal,d.jam_mulai
+        SEPARATOR ', '
+      ) jadwal,
+
+      COALESCE((
+        SELECT SUM(p.nominal)
+        FROM pembayaran p
+        WHERE p.id_booking=b.id_booking
+          AND p.jenis='dp'
+          AND p.status='diterima'
+      ),0) dp_diterima,
+
+      COALESCE((
+        SELECT SUM(p.nominal)
+        FROM pembayaran p
+        WHERE p.id_booking=b.id_booking
+          AND p.jenis='pelunasan'
+          AND p.status='diterima'
+      ),0) pelunasan_diterima,
+
+      (
+        SELECT p.status
+        FROM pembayaran p
+        WHERE p.id_booking=b.id_booking
+          AND p.jenis='dp'
+        ORDER BY p.created_at DESC, p.id_pembayaran DESC
+        LIMIT 1
+      ) status_dp_terakhir,
+
+      (
+        SELECT COUNT(*)
+        FROM reschedule_booking rb
+        WHERE rb.id_booking=b.id_booking
+      ) jumlah_reschedule
+
+    FROM booking b
+    JOIN detail_booking d ON d.id_booking=b.id_booking
+    JOIN lapangan l ON l.id_lapangan=d.id_lapangan
+    WHERE b.id_pelanggan=?
+    GROUP BY b.id_booking
+    ORDER BY b.created_at DESC`,
+    [req.user.customerId]);
+
+    res.json(rows);
+  }catch(e){
+    res.status(500).json({
+      message:'Gagal memuat booking',
+      detail:errorDetail(e)
+    });
+  }
 });
+
 
 r.get('/customer',auth,allow('admin'),async(req,res)=>{
  try{
@@ -141,7 +191,7 @@ r.get('/customer',auth,allow('admin'),async(req,res)=>{
   if(!phone) return res.status(400).json({message:'Nomor HP wajib diisi'});
   const [[customer]]=await pool.query('SELECT id_pelanggan,nama,nomor_hp FROM pelanggan WHERE nomor_hp=?',[phone]);
   res.json(customer||null);
- }catch(e){res.status(500).json({message:'Gagal mencari pelanggan',detail:e.message});}
+ }catch(e){res.status(500).json({message:'Gagal mencari pelanggan',detail:errorDetail(e)});}
 });
 
 r.post('/customer',auth,allow('admin'),async(req,res)=>{
@@ -151,7 +201,7 @@ r.post('/customer',auth,allow('admin'),async(req,res)=>{
   const [result]=await pool.query('INSERT INTO pelanggan(nama,nomor_hp) VALUES(?,?) ON DUPLICATE KEY UPDATE nama=VALUES(nama)',[name,phone]);
   const [[customer]]=await pool.query('SELECT id_pelanggan,nama,nomor_hp FROM pelanggan WHERE nomor_hp=?',[phone]);
   res.status(result.affectedRows===1?201:200).json(customer);
- }catch(e){res.status(500).json({message:'Gagal menyimpan pelanggan',detail:e.message});}
+ }catch(e){res.status(500).json({message:'Gagal menyimpan pelanggan',detail:errorDetail(e)});}
 });
 
 r.post('/admin',auth,allow('admin'),async(req,res)=>{
@@ -171,7 +221,7 @@ r.post('/admin',auth,allow('admin'),async(req,res)=>{
   const data=await createBooking(conn,{items:req.body.items,customerId,actorId:req.user.id,catatan:req.body.catatan,cashDeposit:req.body.depositMethod==='tunai'});
   await conn.commit();
   res.status(201).json(data);
- }catch(e){await conn.rollback();res.status(400).json({message:e.code==='ER_DUP_ENTRY'?'Slot sudah dipesan. Silakan pilih jadwal lain.':e.message});}
+ }catch(e){await conn.rollback();res.status(400).json({message:e.code==='ER_DUP_ENTRY'?'Slot sudah dipesan. Silakan pilih jadwal lain.':publicMessage(e)});}
  finally{conn.release();}
 });
 
@@ -189,7 +239,7 @@ r.get('/',auth,allow('admin','owner'),async(req,res)=>{
    JOIN detail_booking d ON d.id_booking=b.id_booking JOIN lapangan l ON l.id_lapangan=d.id_lapangan
    ${where} GROUP BY b.id_booking ORDER BY b.created_at DESC`,params);
   res.json(rows);
- }catch(e){res.status(500).json({message:'Gagal memuat daftar booking',detail:e.message});}
+ }catch(e){res.status(500).json({message:'Gagal memuat daftar booking',detail:errorDetail(e)});}
 });
 
 r.get('/cancel-requests',auth,allow('admin'),async(req,res)=>{
@@ -202,7 +252,7 @@ r.get('/cancel-requests',auth,allow('admin'),async(req,res)=>{
    JOIN detail_booking d ON d.id_booking=b.id_booking JOIN lapangan l ON l.id_lapangan=d.id_lapangan
    WHERE pb.status_permohonan='menunggu_admin' GROUP BY pb.id_pembatalan ORDER BY pb.created_at`);
   res.json(rows);
- }catch(e){res.status(500).json({message:'Gagal memuat permohonan pembatalan.',detail:e.message});}
+ }catch(e){res.status(500).json({message:'Gagal memuat permohonan pembatalan.',detail:errorDetail(e)});}
 });
 
 r.post('/cancel-requests/:id/review',auth,allow('admin'),async(req,res)=>{
@@ -229,7 +279,7 @@ r.post('/cancel-requests/:id/review',auth,allow('admin'),async(req,res)=>{
   }
   await conn.commit();
   res.json({message:approved?'Permohonan pembatalan disetujui dan slot dilepas.':'Permohonan pembatalan ditolak; booking tetap aktif.'});
- }catch(e){await conn.rollback();res.status(400).json({message:e.message});}
+ }catch(e){await conn.rollback();res.status(400).json({message:publicMessage(e)});}
  finally{conn.release();}
 });
 
@@ -250,7 +300,7 @@ r.get('/:id',auth,async(req,res)=>{
    LEFT JOIN akun_pengguna a ON a.id_akun=rb.dilakukan_oleh LEFT JOIN pelanggan p ON p.id_pelanggan=a.id_pelanggan
    WHERE rb.id_booking=? ORDER BY rb.created_at`,[req.params.id]);
   res.json({...booking,items,payments:payments.map(({bukti_file,...payment})=>({...payment,hasProof:!!bukti_file})),history});
- }catch(e){res.status(500).json({message:'Gagal memuat detail booking.',detail:e.message});}
+ }catch(e){res.status(500).json({message:'Gagal memuat detail booking.',detail:errorDetail(e)});}
 });
 
 r.get('/:id/history',auth,async(req,res)=>{
@@ -263,7 +313,7 @@ r.get('/:id/history',auth,async(req,res)=>{
    LEFT JOIN pelanggan p ON p.id_pelanggan=a.id_pelanggan
    WHERE rb.id_booking=? ORDER BY rb.created_at`,[req.params.id]);
   res.json(rows.map(row=>({...row,aktor:row.nama||row.peran||'Pengguna sistem'})));
- }catch(e){res.status(500).json({message:'Gagal memuat riwayat booking',detail:e.message});}
+ }catch(e){res.status(500).json({message:'Gagal memuat riwayat booking',detail:errorDetail(e)});}
 });
 
 r.post('/:id/cancel',auth,allow('customer'),async(req,res)=>{
@@ -276,6 +326,7 @@ r.post('/:id/cancel',auth,allow('customer'),async(req,res)=>{
   if(!start.mulai) throw new Error('Jadwal booking tidak ditemukan.');
   const [[time]]=await conn.query('SELECT TIMESTAMPDIFF(SECOND,NOW(),?) AS detik',[start.mulai]);
   const secondsUntilStart=Number(time.detik);
+  if(secondsUntilStart<=0) throw new Error('Jadwal sudah dimulai atau lewat sehingga tidak dapat dibatalkan. Hubungi admin GOR.');
   if(cancellationOutcome(secondsUntilStart,false)==='admin_review'){
    const [[request]]=await conn.query("SELECT id_pembatalan FROM pembatalan_booking WHERE id_booking=? AND status_permohonan='menunggu_admin' LIMIT 1",[booking.id_booking]);
    if(request) throw new Error('Permohonan pembatalan booking ini masih menunggu admin.');
@@ -299,7 +350,7 @@ r.post('/:id/cancel',auth,allow('customer'),async(req,res)=>{
   await conn.commit();
   res.json({message:forfeit?'Booking dibatalkan; DP hangus sesuai kebijakan.':refund==='menunggu'?'Booking dibatalkan; pengembalian DP dicatat untuk diproses manual.':'Booking dibatalkan.',dpForfeited:!!forfeit,refundStatus:refund});
 
- }catch(e){await conn.rollback();res.status(400).json({message:e.message});}
+ }catch(e){await conn.rollback();res.status(400).json({message:publicMessage(e)});}
  finally{conn.release();}
 });
 
@@ -319,7 +370,7 @@ r.post('/:id/cancel-gor',auth,allow('admin'),async(req,res)=>{
   await conn.query("INSERT INTO riwayat_booking(id_booking,status_sebelum,status_sesudah,keterangan,dilakukan_oleh) VALUES(?,?,'dibatalkan',?,?)",[booking.id_booking,booking.status_booking,`Pembatalan operasional GOR: ${reason}`,req.user.id]);
   await conn.commit();
   res.json({message:'Pembatalan operasional dicatat; DP tidak hangus dan tindak lanjut pengembalian dilakukan manual.',refundStatus:refund});
- }catch(e){await conn.rollback();res.status(400).json({message:e.message});}
+ }catch(e){await conn.rollback();res.status(400).json({message:publicMessage(e)});}
  finally{conn.release();}
 });
 
@@ -360,7 +411,7 @@ r.post('/:id/reschedule',auth,allow('customer'),async(req,res)=>{
   await conn.query("INSERT INTO riwayat_booking(id_booking,status_sebelum,status_sesudah,keterangan,dilakukan_oleh) VALUES(?,? ,? ,?,?)",[booking.id_booking,booking.status_booking,status,`Reschedule satu kali: ${oldText} → ${newText}; total ${total}, sudah dibayar ${paid}, sisa ${balanceDue}`,req.user.id]);
   await conn.commit();
   res.json({message,total,dp:Math.ceil(total/2),paid,balanceDue,status});
- }catch(e){await conn.rollback();res.status(400).json({message:e.code==='ER_DUP_ENTRY'?'Slot baru saja dipesan. Pilih slot lain.':e.message});}
+ }catch(e){await conn.rollback();res.status(400).json({message:e.code==='ER_DUP_ENTRY'?'Slot baru saja dipesan. Pilih slot lain.':publicMessage(e)});}
  finally{conn.release();}
 });
 

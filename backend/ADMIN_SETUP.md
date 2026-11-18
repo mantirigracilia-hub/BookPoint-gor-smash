@@ -1,13 +1,18 @@
-# Membuat akun Admin / Owner pertama
+# Membuat akun Owner pertama
 
-Registrasi publik hanya membuat role `customer`. Setelah mendaftarkan akun awal melalui UI, jalankan query berikut di MySQL Workbench dengan mengganti nomor HP:
+Registrasi publik hanya membuat role `customer`. Akun **Owner** dibuat sekali
+lewat script provisioning (password disimpan sebagai hash bcrypt, tidak dicetak):
 
-```sql
-USE bookpoint;
-UPDATE akun_pengguna a
-JOIN pelanggan p ON p.id_pelanggan=a.id_pelanggan
-SET a.peran='admin'
-WHERE p.nomor_hp='08xxxxxxxxxx';
+```powershell
+cd backend
+$env:OWNER_USERNAME = "owner"
+$env:OWNER_PASSWORD = "<password minimal 12 karakter>"
+npm run provision-owner
 ```
 
-Untuk owner, ganti `admin` menjadi `owner`. Lakukan hanya untuk akun tim yang dipercaya. Jangan pernah menyimpan password dalam bentuk teks biasa.
+Syarat: `backend/.env` sudah berisi konfigurasi DB dan `JWT_SECRET` acak
+(minimal 32 karakter), serta `database/schema.sql` sudah dijalankan.
+
+Setelah itu masuk sebagai Owner (username + password), lalu buat akun **Admin**
+dari menu **Data Master → Akun admin**. Username admin tidak boleh berupa nomor HP.
+Script menolak berjalan jika Owner sudah ada. Jangan simpan password dalam teks biasa.

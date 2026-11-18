@@ -30,7 +30,8 @@ CREATE TABLE IF NOT EXISTS tarif (
  jam_mulai TIME NULL,
  jam_selesai TIME NULL,
  hari_akhir_pekan BOOLEAN DEFAULT FALSE,
- aktif BOOLEAN DEFAULT TRUE
+ aktif BOOLEAN DEFAULT TRUE,
+ UNIQUE KEY uq_tarif_nama(nama)
 );
 CREATE TABLE IF NOT EXISTS jam_operasional (
  id_jam BIGINT AUTO_INCREMENT PRIMARY KEY,

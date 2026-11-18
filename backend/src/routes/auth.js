@@ -15,18 +15,28 @@ function sendAuthError(res,action,error){
 }
 
 r.post('/register',async(req,res)=>{
+ let conn;
  try{
   const body=req.body||{};
   const nama=String(body.nama||'').trim(),nomor_hp=String(body.nomor_hp||'').trim(),password=String(body.password||'');
   if(!nama||nama.length>120||!/^0\d{8,19}$/.test(nomor_hp)||password.length<8) return res.status(400).json({message:'Nama, nomor HP yang valid, dan password minimal 8 karakter wajib diisi'});
-  const [exists]=await pool.query('SELECT id_pelanggan FROM pelanggan WHERE nomor_hp=?',[nomor_hp]);
-  if(exists.length) return res.status(409).json({message:'Nomor HP sudah terdaftar'});
+  if(Buffer.byteLength(password,'utf8')>72) return res.status(400).json({message:'Password maksimal 72 byte.'});
   const hash=await bcrypt.hash(password,12);
-  const [p]=await pool.query('INSERT INTO pelanggan(nama,nomor_hp) VALUES(?,?)',[nama,nomor_hp]);
-  const [a]=await pool.query("INSERT INTO akun_pengguna(id_pelanggan,kata_sandi_hash,peran) VALUES(?,?,'customer')",[p.insertId,hash]);
+  conn=await pool.getConnection();
+  await conn.beginTransaction();
+  const [exists]=await conn.query('SELECT id_pelanggan FROM pelanggan WHERE nomor_hp=?',[nomor_hp]);
+  if(exists.length){await conn.rollback();return res.status(409).json({message:'Nomor HP sudah terdaftar'});}
+  const [p]=await conn.query('INSERT INTO pelanggan(nama,nomor_hp) VALUES(?,?)',[nama,nomor_hp]);
+  const [a]=await conn.query("INSERT INTO akun_pengguna(id_pelanggan,kata_sandi_hash,peran) VALUES(?,?,'customer')",[p.insertId,hash]);
+  await conn.commit();
   const token=jwt.sign({id:a.insertId,role:'customer',customerId:p.insertId},process.env.JWT_SECRET,{expiresIn:'12h'});
   res.status(201).json({token,user:{id:a.insertId,nama,nomor_hp,role:'customer'}});
- }catch(e){sendAuthError(res,'mendaftar',e);}
+ }catch(e){
+  if(conn){try{await conn.rollback();}catch{/* koneksi sudah tertutup */}}
+  // Dua pendaftaran bersamaan dengan nomor HP sama: unique key menolak yang kedua.
+  if(e.code==='ER_DUP_ENTRY') return res.status(409).json({message:'Nomor HP sudah terdaftar'});
+  sendAuthError(res,'mendaftar',e);
+ }finally{if(conn) conn.release();}
 });
 r.post('/login',async(req,res)=>{
  try{

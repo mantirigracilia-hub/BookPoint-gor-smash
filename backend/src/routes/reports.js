@@ -1,9 +1,11 @@
 import {Router} from 'express';
 import {pool} from '../db.js';
 import {auth,allow} from '../middleware/auth.js';
+import {isValidDate} from '../dateUtils.js';
+import {errorDetail,publicMessage} from '../dbErrors.js';
 
 const r=Router();
-const validDate=value=>typeof value==='string'&&/^\d{4}-\d{2}-\d{2}$/.test(value)&&!Number.isNaN(Date.parse(`${value}T00:00:00Z`));
+const validDate=isValidDate;
 
 r.get('/revenue',auth,allow('admin','owner'),async(req,res)=>{
  try{
@@ -36,7 +38,7 @@ r.get('/revenue',auth,allow('admin','owner'),async(req,res)=>{
    summary.total+=Number(row.pendapatan||0);
   }
   res.json({period,start,end,summary,series:rows});
- }catch(e){res.status(500).json({message:'Gagal memuat laporan pendapatan.',detail:e.message});}
+ }catch(e){res.status(500).json({message:'Gagal memuat laporan pendapatan.',detail:errorDetail(e)});}
 });
 
 r.get('/occupancy',auth,allow('admin','owner'),async(req,res)=>{
@@ -71,7 +73,7 @@ r.get('/occupancy',auth,allow('admin','owner'),async(req,res)=>{
   }
   const withRate=row=>({...row,occupancy_percent:row.total_slots?Number((row.occupied_slots/row.total_slots*100).toFixed(1)):0});
   res.json({start,end,byHour:[...hourly.values()].map(withRate),byDate:[...daily.values()].map(withRate)});
- }catch(e){res.status(500).json({message:'Gagal memuat laporan okupansi.',detail:e.message});}
+ }catch(e){res.status(500).json({message:'Gagal memuat laporan okupansi.',detail:errorDetail(e)});}
 });
 
 export default r;

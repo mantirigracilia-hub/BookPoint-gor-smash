@@ -5,6 +5,7 @@ import path from 'path';
 import {fileURLToPath} from 'url';
 import {pool} from '../db.js';
 import {auth,allow} from '../middleware/auth.js';
+import {errorDetail,publicMessage} from '../dbErrors.js';
 
 const r=Router();
 const uploadDir=path.resolve(path.dirname(fileURLToPath(import.meta.url)),'../../uploads');
@@ -27,58 +28,188 @@ async function removeUploadedFile(file){
  catch(e){if(e.code!=='ENOENT') throw e;}
 }
 
-async function validateProofBooking(req,res,next){
- try{
-  const [[booking]]=await pool.query('SELECT id_booking,status_booking FROM booking WHERE id_booking=? AND id_pelanggan=?',[req.params.bookingId,req.user.customerId]);
-  if(!booking||booking.status_booking!=='menunggu_dp') return res.status(404).json({message:'Booking tidak ditemukan atau tidak menunggu DP.'});
-  req.booking=booking;
-  next();
- }catch(e){next(e);}
+
+
+async function validateProofBooking(req, res, next) {
+  try {
+    const [[booking]] = await pool.query(
+      `SELECT id_booking, status_booking, batas_dp,
+              (batas_dp <= NOW()) AS dp_expired
+       FROM booking
+       WHERE id_booking = ? AND id_pelanggan = ?`,
+      [req.params.bookingId, req.user.customerId]
+    );
+
+    if (!booking || booking.status_booking !== 'menunggu_dp') {
+      return res.status(404).json({
+        message: 'Booking tidak ditemukan atau tidak menunggu DP.'
+      });
+    }
+
+    if (Number(booking.dp_expired) === 1) {
+      return res.status(400).json({
+        message: 'Batas waktu pembayaran DP telah berakhir. Bukti transfer tidak dapat diunggah.'
+      });
+    }
+
+    req.booking = booking;
+    next();
+  } catch (e) {
+    next(e);
+  }
 }
 
-r.post('/:bookingId/proof',auth,allow('customer'),validateProofBooking,upload.single('proof'),async(req,res)=>{
- if(!req.file) return res.status(400).json({message:'Pilih bukti JPG/PNG/WEBP maksimal 5MB.'});
- let conn;
- let transactionOpen=false;
- try{
-  conn=await pool.getConnection();
-  await conn.beginTransaction();
-  transactionOpen=true;
-  const [[booking]]=await conn.query('SELECT id_booking,status_booking,jumlah_dp FROM booking WHERE id_booking=? AND id_pelanggan=? FOR UPDATE',[req.params.bookingId,req.user.customerId]);
-  if(!booking||booking.status_booking!=='menunggu_dp'){
-   await conn.rollback();
-   transactionOpen=false;
-   await removeUploadedFile(req.file);
-   return res.status(404).json({message:'Booking tidak ditemukan atau tidak menunggu DP.'});
+
+r.post('/:bookingId/proof', auth, allow('customer'), validateProofBooking, upload.single('proof'), async (req, res) => {
+  if (!req.file) {
+    return res.status(400).json({
+      message: 'Pilih bukti JPG/PNG/WEBP maksimal 5MB.'
+    });
   }
-  const [[pending]]=await conn.query("SELECT id_pembayaran FROM pembayaran WHERE id_booking=? AND jenis='dp' AND status='menunggu_verifikasi' LIMIT 1",[booking.id_booking]);
-  if(pending){
-   await conn.rollback();
-   transactionOpen=false;
-   await removeUploadedFile(req.file);
-   return res.status(409).json({message:'Bukti DP untuk booking ini sudah menunggu verifikasi admin.'});
+
+  let conn;
+  let transactionOpen = false;
+
+  try {
+    conn = await pool.getConnection();
+    await conn.beginTransaction();
+    transactionOpen = true;
+
+    const [[booking]] = await conn.query(
+      `SELECT id_booking, status_booking, jumlah_dp,
+              (batas_dp <= NOW()) AS dp_expired
+       FROM booking
+       WHERE id_booking = ? AND id_pelanggan = ?
+       FOR UPDATE`,
+      [req.params.bookingId, req.user.customerId]
+    );
+
+    if (!booking || booking.status_booking !== 'menunggu_dp') {
+      await conn.rollback();
+      transactionOpen = false;
+      await removeUploadedFile(req.file);
+
+      return res.status(404).json({
+        message: 'Booking tidak ditemukan atau tidak menunggu DP.'
+      });
+    }
+
+    if (Number(booking.dp_expired) === 1) {
+      await conn.rollback();
+      transactionOpen = false;
+      await removeUploadedFile(req.file);
+
+      return res.status(400).json({
+        message: 'Batas waktu pembayaran DP telah berakhir. Bukti transfer tidak dapat diunggah.'
+      });
+    }
+
+    const [[pending]] = await conn.query(
+      `SELECT id_pembayaran
+       FROM pembayaran
+       WHERE id_booking = ?
+         AND jenis = 'dp'
+         AND status = 'menunggu_verifikasi'
+       LIMIT 1`,
+      [booking.id_booking]
+    );
+
+    if (pending) {
+      await conn.rollback();
+      transactionOpen = false;
+      await removeUploadedFile(req.file);
+
+      return res.status(409).json({
+        message: 'Bukti DP untuk booking ini sudah menunggu verifikasi admin.'
+      });
+    }
+
+    const [payment] = await conn.query(
+      `INSERT INTO pembayaran
+       (id_booking, jenis, metode, nominal, bukti_file, status)
+       VALUES (?, 'dp', 'transfer', ?, ?, 'menunggu_verifikasi')`,
+      [booking.id_booking, booking.jumlah_dp, req.file.filename]
+    );
+
+    await conn.query(
+      `INSERT INTO riwayat_pembayaran
+       (id_pembayaran, status_sesudah, dilakukan_oleh)
+       VALUES (?, 'menunggu_verifikasi', ?)`,
+      [payment.insertId, req.user.id]
+    );
+
+    await conn.commit();
+    transactionOpen = false;
+
+    return res.status(201).json({
+      message: 'Bukti DP berhasil diunggah dan menunggu verifikasi admin.',
+      paymentId: payment.insertId
+    });
+
+  } catch (e) {
+    if (conn && transactionOpen) {
+      await conn.rollback();
+      transactionOpen = false;
+    }
+
+    try {
+      await removeUploadedFile(req.file);
+    } catch (cleanupError) {
+      console.error(
+        'Failed to remove rejected payment proof:',
+        cleanupError.message
+      );
+    }
+
+    return res.status(500).json({
+      message: 'Gagal mengunggah bukti pembayaran.',
+      detail: errorDetail(e)
+    });
+
+  } finally {
+    if (conn) conn.release();
   }
-  const [payment]=await conn.query("INSERT INTO pembayaran(id_booking,jenis,metode,nominal,bukti_file,status) VALUES(?,'dp','transfer',?,?,'menunggu_verifikasi')",[booking.id_booking,booking.jumlah_dp,req.file.filename]);
-  await conn.query("INSERT INTO riwayat_pembayaran(id_pembayaran,status_sesudah,dilakukan_oleh) VALUES(?,'menunggu_verifikasi',?)",[payment.insertId,req.user.id]);
-  await conn.commit();
-  transactionOpen=false;
-  res.status(201).json({message:'Bukti DP berhasil diunggah dan menunggu verifikasi admin.',paymentId:payment.insertId});
- }catch(e){
-  if(conn&&transactionOpen) await conn.rollback();
-  try{await removeUploadedFile(req.file);}
-  catch(cleanupError){console.error('Failed to remove rejected payment proof:',cleanupError.message);}
-  res.status(500).json({message:'Gagal mengunggah bukti pembayaran.',detail:e.message});
- }finally{if(conn) conn.release();}
 });
 
-r.get('/pending',auth,allow('admin'),async(req,res)=>{
- try{
-  const [rows]=await pool.query(`SELECT p.*,b.kode_booking,b.total_harga,cu.nama,cu.nomor_hp
-   FROM pembayaran p JOIN booking b ON b.id_booking=p.id_booking JOIN pelanggan cu ON cu.id_pelanggan=b.id_pelanggan
-   WHERE p.jenis='dp' AND p.status='menunggu_verifikasi' ORDER BY p.created_at`);
-  res.json(rows);
- }catch(e){res.status(500).json({message:'Gagal memuat pembayaran menunggu verifikasi.',detail:e.message});}
+
+// REQ-09: instruksi transfer DP. Data rekening dari environment (klien belum memberi nomor rekening di transkrip).
+r.get('/instructions',auth,allow('customer','admin'),(req,res)=>{
+ const bank=String(process.env.PAYMENT_BANK_NAME||'').trim();
+ const accountNumber=String(process.env.PAYMENT_ACCOUNT_NUMBER||'').trim();
+ const accountName=String(process.env.PAYMENT_ACCOUNT_NAME||'').trim();
+ res.json({configured:Boolean(bank&&accountNumber&&accountName),bank,accountNumber,accountName});
 });
+
+
+r.get('/pending', auth, allow('admin'), async (req, res) => {
+  try {
+    const [rows] = await pool.query(`
+      SELECT
+        p.*,
+        b.kode_booking,
+        b.total_harga,
+        cu.nama,
+        cu.nomor_hp
+      FROM pembayaran p
+      JOIN booking b
+        ON b.id_booking = p.id_booking
+      JOIN pelanggan cu
+        ON cu.id_pelanggan = b.id_pelanggan
+      WHERE p.jenis = 'dp'
+        AND p.status = 'menunggu_verifikasi'
+        AND b.status_booking = 'menunggu_dp'
+      ORDER BY p.created_at
+    `);
+
+    res.json(rows);
+  } catch (e) {
+    res.status(500).json({
+      message: 'Gagal memuat pembayaran menunggu verifikasi.',
+      detail: errorDetail(e)
+    });
+  }
+});
+
 
 r.get('/refunds',auth,allow('admin','owner'),async(req,res)=>{
  try{
@@ -88,7 +219,7 @@ r.get('/refunds',auth,allow('admin','owner'),async(req,res)=>{
    FROM pembatalan_booking pb JOIN booking b ON b.id_booking=pb.id_booking JOIN pelanggan cu ON cu.id_pelanggan=b.id_pelanggan
    WHERE pb.status_pengembalian='menunggu' ORDER BY pb.created_at`);
   res.json(rows);
- }catch(e){res.status(500).json({message:'Gagal memuat pengembalian yang menunggu.',detail:e.message});}
+ }catch(e){res.status(500).json({message:'Gagal memuat pengembalian yang menunggu.',detail:errorDetail(e)});}
 });
 
 r.post('/refunds/:cancellationId/complete',auth,allow('admin'),async(req,res)=>{
@@ -105,7 +236,7 @@ r.post('/refunds/:cancellationId/complete',auth,allow('admin'),async(req,res)=>{
   await conn.query("INSERT INTO riwayat_booking(id_booking,status_sebelum,status_sesudah,keterangan,dilakukan_oleh) VALUES(?,'dibatalkan','dibatalkan',?,?)",[cancellation.id_booking,`Pengembalian DP ${paid} diproses manual`,req.user.id]);
   await conn.commit();
   res.json({message:'Pengembalian DP dicatat selesai.',nominal:paid});
- }catch(e){await conn.rollback();res.status(400).json({message:e.message});}
+ }catch(e){await conn.rollback();res.status(400).json({message:publicMessage(e)});}
  finally{conn.release();}
 });
 
@@ -119,7 +250,7 @@ r.get('/:id/proof',auth,async(req,res)=>{
   return res.sendFile(path.join(uploadDir,path.basename(payment.bukti_file||'')),err=>{
    if(err&&!res.headersSent) res.status(err.statusCode||404).json({message:'File bukti pembayaran tidak tersedia.'});
   });
- }catch(e){res.status(500).json({message:'Gagal membuka bukti pembayaran.',detail:e.message});}
+ }catch(e){res.status(500).json({message:'Gagal membuka bukti pembayaran.',detail:errorDetail(e)});}
 });
 
 r.post('/:id/verify',auth,allow('admin'),async(req,res)=>{
@@ -154,7 +285,7 @@ r.post('/:id/verify',auth,allow('admin'),async(req,res)=>{
   }
   await conn.commit();
   res.json({message:accepted?`DP diverifikasi; booking terkonfirmasi.${duplicateProofsRejected?` ${duplicateProofsRejected} bukti DP duplikat ditolak.`:''}`:'Bukti DP ditolak. Pelanggan dapat mengunggah ulang sebelum batas waktu.',duplicateProofsRejected});
- }catch(e){await conn.rollback();res.status(400).json({message:e.message});}
+ }catch(e){await conn.rollback();res.status(400).json({message:publicMessage(e)});}
  finally{conn.release();}
 });
 
@@ -175,7 +306,7 @@ r.post('/:bookingId/settle',auth,allow('admin'),async(req,res)=>{
   await conn.query("INSERT INTO riwayat_booking(id_booking,status_sebelum,status_sesudah,keterangan,dilakukan_oleh) VALUES(?,'terkonfirmasi','lunas',?,?)",[booking.id_booking,`Pelunasan tunai diterima ${balance}; uang diserahkan ${tender}`,req.user.id]);
   await conn.commit();
   res.json({message:'Pelunasan berhasil dicatat.',paid:balance,change:tender-balance});
- }catch(e){await conn.rollback();res.status(400).json({message:e.message});}
+ }catch(e){await conn.rollback();res.status(400).json({message:publicMessage(e)});}
  finally{conn.release();}
 });
 

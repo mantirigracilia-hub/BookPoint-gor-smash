@@ -298,3 +298,7 @@ tbody th{color:#334155}
  .report-panel .toolbar input,.report-panel .toolbar select{flex:1}
  .report-panel .toolbar button{flex:1}
 }
+
+.transfer-info{margin:10px 0;padding:12px 14px;border:1px solid #a7f3d0;background:#ecfdf5;border-radius:12px;display:grid;gap:4px}
+.transfer-info p{margin:0;font-weight:600;word-break:break-word}
+.transfer-info small{color:#475569}

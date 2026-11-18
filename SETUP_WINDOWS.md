@@ -17,6 +17,10 @@ Copy-Item .env.example .env
 ```
 Edit `backend/.env` dan isi `DB_PASSWORD` serta `JWT_SECRET` sendiri. Jangan commit file `.env`.
 
+Frontend tidak perlu `.env` untuk development lokal (otomatis memakai
+`http://<host yang dibuka>:5000/api`). Salin `frontend/.env.example` menjadi
+`frontend/.env` hanya jika backend berada di alamat lain.
+
 ## 4. Install dependency
 Kembali ke root folder:
 ```powershell
@@ -35,7 +39,7 @@ Buka:
 Jika PowerShell memblokir `npm`, gunakan `npm.cmd`.
 
 ## 6. Buat akun
-Daftar sebagai pelanggan dari halaman BookPoint. Untuk membuat Admin/Owner pertama, ikuti `backend/ADMIN_SETUP.md`.
+Daftar sebagai pelanggan dari halaman BookPoint. Untuk membuat Owner pertama, ikuti `backend/ADMIN_SETUP.md`; admin berikutnya dibuat Owner dari menu Data Master.
 
 ## 7. Push ke GitHub
 Pastikan berada di root project:
@@ -50,5 +54,5 @@ Jangan commit `backend/.env`, `node_modules`, file upload bukti, atau password.
 ## Troubleshooting
 - `ECONNREFUSED` MySQL: pastikan MySQL Server berjalan dan port 3306 benar.
 - `Access denied`: cek DB_USER dan DB_PASSWORD di backend/.env.
-- CORS: pastikan frontend di port 5173.
+- CORS: pastikan frontend di port 5173 (development: localhost dan IP jaringan lokal diizinkan otomatis).
 - API 500: periksa terminal backend dan pastikan schema.sql sudah dijalankan.
