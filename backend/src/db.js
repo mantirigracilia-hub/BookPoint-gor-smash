@@ -7,11 +7,12 @@ dotenv.config();
 // Atur DB_TIME_ZONE (offset, mis. +08:00 untuk WITA) agar setiap koneksi memakai zona waktu GOR.
 export const DB_TIME_ZONE=(process.env.DB_TIME_ZONE||'+08:00').trim();
 if(!/^[+-](0\d|1[0-4]):[0-5]\d$/.test(DB_TIME_ZONE)) throw new Error('DB_TIME_ZONE harus berupa offset seperti +08:00.');
+const DB_SSL_CA=(process.env.DB_SSL_CA||'').replace(/\\n/g,'\n').trim();
 
 export const pool = mysql.createPool({
  host:process.env.DB_HOST, port:Number(process.env.DB_PORT||3306),
  user:process.env.DB_USER, password:process.env.DB_PASSWORD,
- database:process.env.DB_NAME, waitForConnections:true,
+ database:process.env.DB_NAME, ssl:DB_SSL_CA?{ca:DB_SSL_CA}:undefined, waitForConnections:true,
  connectionLimit:10, dateStrings:true
 });
 pool.pool.on('connection',connection=>{
